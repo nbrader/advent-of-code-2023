@@ -8,7 +8,7 @@
 ------------------------------
 {-
     To build, run the following shell command in this directory:
-        stack --resolver lts-20.5 ghc --package split-0.2.3.5 -- '.\day1.hs' -O2
+        stack --resolver lts-20.5 ghc --package split-0.2.3.5 --package containers-0.6.5.1 -- '.\day1.hs' -O2
 -}
 
 ------------
