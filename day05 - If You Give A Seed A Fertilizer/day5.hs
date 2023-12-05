@@ -133,11 +133,11 @@ locations (Almanac
         in location
 
 day5part1 = do
-  contents <- readFile "day5 (data 3).csv"
+  contents <- readFile "day5 (data).csv"
   let closest = minimum . locations . readAlmanac $ contents
   print $ closest
 
 day5part2 = do
-  contents <- readFile "day5 (data 3).csv"
+  contents <- readFile "day5 (data).csv"
   let closest = minimum . locations . readAlmanac2 $ contents
   print $ closest
