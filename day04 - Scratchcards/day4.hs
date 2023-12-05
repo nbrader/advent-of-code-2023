@@ -1,5 +1,5 @@
 #!/usr/bin/env stack
--- stack --resolver lts-21.22 ghci --package split-0.2.3.5 --package containers-0.6.7 --package linear-1.22
+-- stack --resolver lts-21.22 ghci --package split-0.2.3.5 --package containers-0.6.7 --package linear-1.22 --package fastmemo-0.1.1
 
 --------------------------------
 --------------------------------
@@ -31,6 +31,7 @@ import Debug.Trace (trace)
 import Data.Map as M hiding (map, filter, take, drop)
 import Data.Tuple (swap)
 import Data.Function (on, fix)
+import Data.Function.FastMemo (memoize)
 
 
 -------------
@@ -65,9 +66,6 @@ day4part1 = do
   contents <- readFile "day4 (data 3).csv"
   let total = sum . map (pointsFromGame . readGame) . lines $ contents
   print $ total
-
-memoize :: (Int -> a) -> (Int -> a)
-memoize f = (map f [0 ..] !!)
 
 cards :: [Game] -> (Int -> Int) -> (Int -> Int)
 cards gs = go
