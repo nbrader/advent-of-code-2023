@@ -8,7 +8,7 @@
 --------------------------------
 {-
     To build, run the following shell command in this directory:
-        stack --resolver lts-21.22 ghc --package split-0.2.3.5 --package containers-0.6.7 --package linear-1.22
+        stack --resolver lts-21.22 ghc --package split-0.2.3.5 --package containers-0.6.7 --package linear-1.22 -- '.\day5.hs' -O2
 -}
 
 ------------
@@ -26,10 +26,10 @@
 -------------
 import Data.Char (isDigit)
 import Data.List (sort, tails, isPrefixOf, groupBy, find, nub)
-import Data.List.Split (splitOn)
+import Data.List.Split (splitOn, chunksOf)
 import Data.Maybe (fromJust, fromMaybe)
 import Debug.Trace (trace)
-import Data.Map as M hiding (map, filter, take, drop)
+import Data.IntMap as M hiding (map, filter, take, drop, null)
 import Data.Tuple (swap)
 import Data.Function (on, fix)
 import Data.Function.FastMemo (memoize)
@@ -38,45 +38,81 @@ import Data.Function.FastMemo (memoize)
 -------------
 -- Program --
 -------------
-main = day5part1
+main = day5part2
+
+type DestinationAndRangeFromSourceMap = M.IntMap (Int,Int)
 
 data Almanac = Almanac {
-    almanacSeeds :: [Integer],
-    almanacSeedToSoilMap            :: M.Map Integer Integer,
-    almanacSoilToFertilizerMap      :: M.Map Integer Integer,
-    almanacFertilizerToWaterMap     :: M.Map Integer Integer,
-    almanacWaterToLightMap          :: M.Map Integer Integer,
-    almanacLightToTemperatureMap    :: M.Map Integer Integer,
-    almanacTemperatureToHumidityMap :: M.Map Integer Integer,
-    almanacHumidityToLocationMap    :: M.Map Integer Integer
+    almanacSeeds :: [Int],
+    almanacSeedToSoilMap            :: DestinationAndRangeFromSourceMap,
+    almanacSoilToFertilizerMap      :: DestinationAndRangeFromSourceMap,
+    almanacFertilizerToWaterMap     :: DestinationAndRangeFromSourceMap,
+    almanacWaterToLightMap          :: DestinationAndRangeFromSourceMap,
+    almanacLightToTemperatureMap    :: DestinationAndRangeFromSourceMap,
+    almanacTemperatureToHumidityMap :: DestinationAndRangeFromSourceMap,
+    almanacHumidityToLocationMap    :: DestinationAndRangeFromSourceMap
     } deriving (Show)
 
 readAlmanac :: String -> Almanac
 readAlmanac inStr = Almanac {
     almanacSeeds = map read . splitOn " " $ seedsStr,
-    almanacSeedToSoilMap            = unions . map mapFromTriple . map (map read) . map (splitOn " ") . lines $ seedToSoilMapStr,
-    almanacSoilToFertilizerMap      = unions . map mapFromTriple . map (map read) . map (splitOn " ") . lines $ soilToFertilizerMap,
-    almanacFertilizerToWaterMap     = unions . map mapFromTriple . map (map read) . map (splitOn " ") . lines $ fertilizerToWaterMap,
-    almanacWaterToLightMap          = unions . map mapFromTriple . map (map read) . map (splitOn " ") . lines $ waterToLightMap,
-    almanacLightToTemperatureMap    = unions . map mapFromTriple . map (map read) . map (splitOn " ") . lines $ lightToTemperatureMap,
-    almanacTemperatureToHumidityMap = unions . map mapFromTriple . map (map read) . map (splitOn " ") . lines $ temperatureToHumidityMap,
-    almanacHumidityToLocationMap    = unions . map mapFromTriple . map (map read) . map (splitOn " ") . lines $ humidityToLocationMap
+    almanacSeedToSoilMap            = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nseedToSoilMapStr: "         ++ show x ++ "\n") x)-} $ seedToSoilMapStr,
+    almanacSoilToFertilizerMap      = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nsoilToFertilizerMap: "      ++ show x ++ "\n") x)-} $ soilToFertilizerMap,
+    almanacFertilizerToWaterMap     = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nfertilizerToWaterMap: "     ++ show x ++ "\n") x)-} $ fertilizerToWaterMap,
+    almanacWaterToLightMap          = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nwaterToLightMap: "          ++ show x ++ "\n") x)-} $ waterToLightMap,
+    almanacLightToTemperatureMap    = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nlightToTemperatureMap: "    ++ show x ++ "\n") x)-} $ lightToTemperatureMap,
+    almanacTemperatureToHumidityMap = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\ntemperatureToHumidityMap: " ++ show x ++ "\n") x)-} $ temperatureToHumidityMap,
+    almanacHumidityToLocationMap    = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nhumidityToLocationMap: "    ++ show x ++ "\n") x)-} $ humidityToLocationMap
     }
   where (seedsStr,                 after1) = break (=='\n') (drop (length "seeds: ") $ inStr)
-        (seedToSoilMapStr,         after2) = break (==':') (drop (length "\n\nseed-to-soil map:\n") $ after1)
-        (soilToFertilizerMap,      after3) = break (==':') (drop (length "\n\nsoil-to-fertilizer map:\n") $ after2)
-        (fertilizerToWaterMap,     after4) = break (==':') (drop (length "\n\nfertilizer-to-water map:\n") $ after3)
-        (waterToLightMap,          after5) = break (==':') (drop (length "\n\nwater-to-light map:\n") $ after4)
-        (lightToTemperatureMap,    after6) = break (==':') (drop (length "\n\nlight-to-temperature map:\n") $ after5)
-        (temperatureToHumidityMap, after7) = break (==':') (drop (length "\n\ntemperature-to-humidity map:\n") $ after6)
-        humidityToLocationMap =                            (drop (length "\n\nhumidity-to-location map:\n") $ after7)
+        (seedToSoilMapStr,         after2) = (\(f,s) -> (take ((length f) - length "\n\nsoil-to-fertilizer map") f, drop (length ":\n") s)) . break (==':') $ (drop (length "\n\nseed-to-soil map:\n") $ after1)
+        (soilToFertilizerMap,      after3) = (\(f,s) -> (take ((length f) - length "\n\nfertilizer-to-water map") f, drop (length ":\n") s)) . break (==':') $ after2
+        (fertilizerToWaterMap,     after4) = (\(f,s) -> (take ((length f) - length "\n\nwater-to-light map") f, drop (length ":\n") s)) . break (==':') $ after3
+        (waterToLightMap,          after5) = (\(f,s) -> (take ((length f) - length "\n\nlight-to-temperature map") f, drop (length ":\n") s)) . break (==':') $ after4
+        (lightToTemperatureMap,    after6) = (\(f,s) -> (take ((length f) - length "\n\ntemperature-to-humidity map") f, drop (length ":\n") s)) . break (==':') $ after5
+        (temperatureToHumidityMap, after7) = (\(f,s) -> (take ((length f) - length "\n\nhumidity-to-location map") f, drop (length ":\n") s)) . break (==':') $ after6
+        humidityToLocationMap = after7
 
-mapFromTriple :: [Integer] -> Map Integer Integer
-mapFromTriple [destStart, sourceStart, amount] = M.fromList [(sourceStart + i, destStart + i) | i <- take (fromIntegral amount) [0..]]
+readAlmanac2 :: String -> Almanac
+readAlmanac2 inStr = Almanac {
+    almanacSeeds = seedsFromPairs . map read . splitOn " " $ seedsStr,
+    almanacSeedToSoilMap            = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nseedToSoilMapStr: "         ++ show x ++ "\n") x)-} $ seedToSoilMapStr,
+    almanacSoilToFertilizerMap      = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nsoilToFertilizerMap: "      ++ show x ++ "\n") x)-} $ soilToFertilizerMap,
+    almanacFertilizerToWaterMap     = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nfertilizerToWaterMap: "     ++ show x ++ "\n") x)-} $ fertilizerToWaterMap,
+    almanacWaterToLightMap          = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nwaterToLightMap: "          ++ show x ++ "\n") x)-} $ waterToLightMap,
+    almanacLightToTemperatureMap    = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nlightToTemperatureMap: "    ++ show x ++ "\n") x)-} $ lightToTemperatureMap,
+    almanacTemperatureToHumidityMap = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\ntemperatureToHumidityMap: " ++ show x ++ "\n") x)-} $ temperatureToHumidityMap,
+    almanacHumidityToLocationMap    = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nhumidityToLocationMap: "    ++ show x ++ "\n") x)-} $ humidityToLocationMap
+    }
+  where (seedsStr,                 after1) = break (=='\n') (drop (length "seeds: ") $ inStr)
+        (seedToSoilMapStr,         after2) = (\(f,s) -> (take ((length f) - length "\n\nsoil-to-fertilizer map") f, drop (length ":\n") s)) . break (==':') $ (drop (length "\n\nseed-to-soil map:\n") $ after1)
+        (soilToFertilizerMap,      after3) = (\(f,s) -> (take ((length f) - length "\n\nfertilizer-to-water map") f, drop (length ":\n") s)) . break (==':') $ after2
+        (fertilizerToWaterMap,     after4) = (\(f,s) -> (take ((length f) - length "\n\nwater-to-light map") f, drop (length ":\n") s)) . break (==':') $ after3
+        (waterToLightMap,          after5) = (\(f,s) -> (take ((length f) - length "\n\nlight-to-temperature map") f, drop (length ":\n") s)) . break (==':') $ after4
+        (lightToTemperatureMap,    after6) = (\(f,s) -> (take ((length f) - length "\n\ntemperature-to-humidity map") f, drop (length ":\n") s)) . break (==':') $ after5
+        (temperatureToHumidityMap, after7) = (\(f,s) -> (take ((length f) - length "\n\nhumidity-to-location map") f, drop (length ":\n") s)) . break (==':') $ after6
+        humidityToLocationMap = after7
 
-lookupFromMap = (\m x -> fromMaybe x $ M.lookup x m)
+seedsFromPairs :: [Int] -> [Int]
+seedsFromPairs xs = concat . map (\[start,range] -> take range [start..]) . chunksOf 2 $ xs
 
-locations :: Almanac -> [Integer]
+destinationAndRangeFromSourceMapFromTriple :: [Int] -> DestinationAndRangeFromSourceMap
+destinationAndRangeFromSourceMapFromTriple [destStart, sourceStart, range] = M.fromList [(sourceStart, (destStart, range))]
+destinationAndRangeFromSourceMapFromTriple x = error (show x)
+
+lookupFromMap :: DestinationAndRangeFromSourceMap -> Int -> Int
+lookupFromMap m k = case maybeInfimum of
+    Nothing -> k
+    Just lower -> let (destStart, range) = fromJust $ M.lookup lower m
+                  in if k < lower + range
+                     then destStart + (k - lower)
+                     else k
+  where keys = M.keys m
+        sortedKeys = sort keys
+        lowerKeys = takeWhile (<= k) keys
+        maybeInfimum = if null lowerKeys then Nothing else Just $ last lowerKeys
+
+locations :: Almanac -> [Int]
 locations (Almanac 
     seeds
     seedToSoilMap
@@ -97,6 +133,11 @@ locations (Almanac
         in location
 
 day5part1 = do
-  contents <- readFile "day5 (data).csv"
+  contents <- readFile "day5 (data 3).csv"
   let closest = minimum . locations . readAlmanac $ contents
+  print $ closest
+
+day5part2 = do
+  contents <- readFile "day5 (data 3).csv"
+  let closest = minimum . locations . readAlmanac2 $ contents
   print $ closest
