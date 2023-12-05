@@ -26,14 +26,11 @@
 -------------
 import Data.Char (isDigit)
 import Data.List (sort, tails, isPrefixOf, groupBy, find, nub)
-import Data.List.Split (splitOn)
 import Data.Maybe
 import Debug.Trace (trace)
 import Data.Map as M hiding (map, filter, take, drop)
-import Linear hiding (trace)
-import Linear.V2
 import Data.Tuple (swap)
-import Data.Function (on)
+import Data.Function (on, fix)
 
 
 -------------
@@ -69,21 +66,17 @@ day4part1 = do
   let total = sum . map (pointsFromGame . readGame) . lines $ contents
   print $ total
 
-cards :: [Game] -> Int
-cards [] = 0
-cards (g:gs) = case matches g of
-            0 -> 1
-            n -> 1 + (sum $ map cards (take n $ tails gs))
+memoize :: (Int -> a) -> (Int -> a)
+memoize f = (map f [0 ..] !!)
 
-memoized_cards :: [Game] -> Int -> Int
-memoized_cards gs = go
-   where go :: Int -> Int
-         go = (map cards [0 ..] !!)
-           where cards i = case matches (gs !! i) of
-                            0 -> 1
-                            n -> 1 + (sum $ map go [(i+1) .. (min (length gs - 1) (i+n))])
+cards :: [Game] -> (Int -> Int) -> (Int -> Int)
+cards gs = go
+   where go :: (Int -> Int) -> (Int -> Int)
+         go f i = case matches (gs !! i) of
+                    0 -> 1
+                    n -> 1 + (sum $ map f [(i+1) .. (min (length gs - 1) (i+n))])
 
 day4part2 = do
   contents <- readFile "day4 (data 3).csv"
-  let total = sum . (\gs -> map (memoized_cards gs) ([0..(length gs - 1)])) . map readGame . lines $ contents
+  let total = sum . (\gs -> map (fix (memoize . cards gs)) ([0..(length gs - 1)])) . map readGame . lines $ contents
   print $ total
