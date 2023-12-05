@@ -67,6 +67,10 @@ day4part1 = do
   let total = sum . map (pointsFromGame . readGame) . lines $ contents
   print $ total
 
+-- faster but less generic
+-- memoize :: (Int -> a) -> (Int -> a)
+-- memoize f = (map f [0 ..] !!)
+
 cards :: [Game] -> (Int -> Int) -> (Int -> Int)
 cards gs = go
    where go :: (Int -> Int) -> (Int -> Int)
