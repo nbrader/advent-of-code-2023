@@ -1,11 +1,11 @@
 #!/usr/bin/env stack
 -- stack --resolver lts-21.22 ghci --package split-0.2.3.5 --package containers-0.6.7 --package linear-1.22 --package fastmemo-0.1.1
 
---------------------------------
---------------------------------
+---------------------------------------------------
+---------------------------------------------------
 ----  Day 5:  If You Give A Seed A Fertilizer  ----
---------------------------------
---------------------------------
+---------------------------------------------------
+---------------------------------------------------
 {-
     To build, run the following shell command in this directory:
         stack --resolver lts-21.22 ghc --package split-0.2.3.5 --package containers-0.6.7 --package linear-1.22 -- '.\day5.hs' -O2
