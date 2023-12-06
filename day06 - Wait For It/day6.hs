@@ -68,7 +68,7 @@ numberOfWinningOptions' (Race timeLimit recordDistances) = if halfInteger then f
   where recordDistances' = fromIntegral recordDistances
         timeLimit' = fromIntegral timeLimit
         
-        pressTimeMidPoint = timeLimit'/2
+        -- pressTimeMidPoint = timeLimit'/2
         pressTimeMidRadius = (sqrt ((timeLimit'^2 - 4*recordDistances')))/2
         
         halfInteger = timeLimit `mod` 2 == 1
