@@ -62,10 +62,21 @@ numberOfWinningOptions (Race timeLimits recordDistances) = length $ filter (> re
   where distance pressTime = pressTime*(timeLimits - pressTime)
         pressTimes = take (timeLimits+1) [0..]
 
+-- pressTime*pressTime - timeLimit*pressTime + recordDistances > 0
+numberOfWinningOptions' :: Race -> Int
+numberOfWinningOptions' (Race timeLimit recordDistances) = if halfInteger then floor (2*pressTimeMidRadius) + 1 else 2*(floor pressTimeMidRadius) + 1
+  where recordDistances' = fromIntegral recordDistances
+        timeLimit' = fromIntegral timeLimit
+        
+        pressTimeMidPoint = timeLimit'/2
+        pressTimeMidRadius = (sqrt ((timeLimit'^2 - 4*recordDistances')))/2
+        
+        halfInteger = timeLimit `mod` 2 == 1
+
 day6part1 = do
   contents <- readFile "day6 (data).csv"
-  print $ product $ map numberOfWinningOptions $ readRaces $ contents
+  print $ product $ map numberOfWinningOptions' $ readRaces $ contents
 
 day6part2 = do
   contents <- readFile "day6 (data).csv"
-  print $ numberOfWinningOptions $ readAsSingleRace $ contents
+  print $ numberOfWinningOptions' $ readAsSingleRace $ contents
