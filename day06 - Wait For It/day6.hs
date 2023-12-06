@@ -75,8 +75,7 @@ numberOfWinningOptions' (Race timeLimit recordDistances) = if halfInteger then 2
 
 day6part1 = do
   contents <- readFile "day6 (data).csv"
-  print $ map numberOfWinningOptions $ readRaces $ contents
-  print $ map numberOfWinningOptions' $ readRaces $ contents
+  print $ product $ map numberOfWinningOptions' $ readRaces $ contents
 
 day6part2 = do
   contents <- readFile "day6 (data).csv"
