@@ -18,18 +18,17 @@
 -- 
 
 -- *Main> day5part2
--- 
+-- 69841803
 
 
 -------------
 -- Imports --
 -------------
 import Data.Char (isDigit)
-import Data.List (sort, tails, isPrefixOf, groupBy, find, nub)
+import Data.List (sort, tails, isPrefixOf, groupBy, find, nub, foldl')
 import Data.List.Split (splitOn, chunksOf)
 import Data.Maybe (fromJust, fromMaybe)
 import Debug.Trace (trace)
-import Data.IntMap as M hiding (map, filter, take, drop, null)
 import Data.Tuple (swap)
 import Data.Function (on, fix)
 import Data.Function.FastMemo (memoize)
@@ -40,29 +39,30 @@ import Data.Function.FastMemo (memoize)
 -------------
 main = day5part2
 
-type DestinationAndRangeFromSourceMap = M.IntMap (Int,Int)
+data IntervalMap = IntervalMap {fromIntervals :: [Interval], toIntervals :: [Interval]} deriving (Show)
+emptyIntervalMap = IntervalMap [] []
 
 data Almanac = Almanac {
-    almanacSeedRanges :: [Range],
-    almanacSeedToSoilMap            :: DestinationAndRangeFromSourceMap,
-    almanacSoilToFertilizerMap      :: DestinationAndRangeFromSourceMap,
-    almanacFertilizerToWaterMap     :: DestinationAndRangeFromSourceMap,
-    almanacWaterToLightMap          :: DestinationAndRangeFromSourceMap,
-    almanacLightToTemperatureMap    :: DestinationAndRangeFromSourceMap,
-    almanacTemperatureToHumidityMap :: DestinationAndRangeFromSourceMap,
-    almanacHumidityToLocationMap    :: DestinationAndRangeFromSourceMap
+    almanacSeedIntervals :: [Interval],
+    almanacSeedToSoilMap            :: IntervalMap,
+    almanacSoilToFertilizerMap      :: IntervalMap,
+    almanacFertilizerToWaterMap     :: IntervalMap,
+    almanacWaterToLightMap          :: IntervalMap,
+    almanacLightToTemperatureMap    :: IntervalMap,
+    almanacTemperatureToHumidityMap :: IntervalMap,
+    almanacHumidityToLocationMap    :: IntervalMap
     } deriving (Show)
 
 readAlmanac :: String -> Almanac
 readAlmanac inStr = Almanac {
-    almanacSeedRanges = map (\x -> Interval x 1) . map read . splitOn " " $ seedsStr,
-    almanacSeedToSoilMap            = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nseedToSoilMapStr: "         ++ show x ++ "\n") x)-} $ seedToSoilMapStr,
-    almanacSoilToFertilizerMap      = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nsoilToFertilizerMap: "      ++ show x ++ "\n") x)-} $ soilToFertilizerMap,
-    almanacFertilizerToWaterMap     = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nfertilizerToWaterMap: "     ++ show x ++ "\n") x)-} $ fertilizerToWaterMap,
-    almanacWaterToLightMap          = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nwaterToLightMap: "          ++ show x ++ "\n") x)-} $ waterToLightMap,
-    almanacLightToTemperatureMap    = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nlightToTemperatureMap: "    ++ show x ++ "\n") x)-} $ lightToTemperatureMap,
-    almanacTemperatureToHumidityMap = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\ntemperatureToHumidityMap: " ++ show x ++ "\n") x)-} $ temperatureToHumidityMap,
-    almanacHumidityToLocationMap    = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nhumidityToLocationMap: "    ++ show x ++ "\n") x)-} $ humidityToLocationMap
+    almanacSeedIntervals = map (\x -> Interval x x) . map read . splitOn " " $ seedsStr,
+    almanacSeedToSoilMap            = foldl' addIntervalFromTriple emptyIntervalMap . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nseedToSoilMapStr: "         ++ show x ++ "\n") x)-} $ seedToSoilMapStr,
+    almanacSoilToFertilizerMap      = foldl' addIntervalFromTriple emptyIntervalMap . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nsoilToFertilizerMap: "      ++ show x ++ "\n") x)-} $ soilToFertilizerMap,
+    almanacFertilizerToWaterMap     = foldl' addIntervalFromTriple emptyIntervalMap . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nfertilizerToWaterMap: "     ++ show x ++ "\n") x)-} $ fertilizerToWaterMap,
+    almanacWaterToLightMap          = foldl' addIntervalFromTriple emptyIntervalMap . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nwaterToLightMap: "          ++ show x ++ "\n") x)-} $ waterToLightMap,
+    almanacLightToTemperatureMap    = foldl' addIntervalFromTriple emptyIntervalMap . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nlightToTemperatureMap: "    ++ show x ++ "\n") x)-} $ lightToTemperatureMap,
+    almanacTemperatureToHumidityMap = foldl' addIntervalFromTriple emptyIntervalMap . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\ntemperatureToHumidityMap: " ++ show x ++ "\n") x)-} $ temperatureToHumidityMap,
+    almanacHumidityToLocationMap    = foldl' addIntervalFromTriple emptyIntervalMap . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nhumidityToLocationMap: "    ++ show x ++ "\n") x)-} $ humidityToLocationMap
     }
   where (seedsStr,                 after1) = break (=='\n') (drop (length "seeds: ") $ inStr)
         (seedToSoilMapStr,         after2) = (\(f,s) -> (take ((length f) - length "\n\nsoil-to-fertilizer map") f, drop (length ":\n") s)) . break (==':') $ (drop (length "\n\nseed-to-soil map:\n") $ after1)
@@ -75,14 +75,14 @@ readAlmanac inStr = Almanac {
 
 readAlmanac2 :: String -> Almanac
 readAlmanac2 inStr = Almanac {
-    almanacSeedRanges = seedRangesFromPairs . map read . splitOn " " $ seedsStr,
-    almanacSeedToSoilMap            = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nseedToSoilMapStr: "         ++ show x ++ "\n") x)-} $ seedToSoilMapStr,
-    almanacSoilToFertilizerMap      = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nsoilToFertilizerMap: "      ++ show x ++ "\n") x)-} $ soilToFertilizerMap,
-    almanacFertilizerToWaterMap     = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nfertilizerToWaterMap: "     ++ show x ++ "\n") x)-} $ fertilizerToWaterMap,
-    almanacWaterToLightMap          = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nwaterToLightMap: "          ++ show x ++ "\n") x)-} $ waterToLightMap,
-    almanacLightToTemperatureMap    = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nlightToTemperatureMap: "    ++ show x ++ "\n") x)-} $ lightToTemperatureMap,
-    almanacTemperatureToHumidityMap = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\ntemperatureToHumidityMap: " ++ show x ++ "\n") x)-} $ temperatureToHumidityMap,
-    almanacHumidityToLocationMap    = unions . map destinationAndRangeFromSourceMapFromTriple . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nhumidityToLocationMap: "    ++ show x ++ "\n") x)-} $ humidityToLocationMap
+    almanacSeedIntervals = seedIntervalsFromPairs . map read . splitOn " " $ seedsStr,
+    almanacSeedToSoilMap            = foldl' addIntervalFromTriple emptyIntervalMap . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nseedToSoilMapStr: "         ++ show x ++ "\n") x)-} $ seedToSoilMapStr,
+    almanacSoilToFertilizerMap      = foldl' addIntervalFromTriple emptyIntervalMap . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nsoilToFertilizerMap: "      ++ show x ++ "\n") x)-} $ soilToFertilizerMap,
+    almanacFertilizerToWaterMap     = foldl' addIntervalFromTriple emptyIntervalMap . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nfertilizerToWaterMap: "     ++ show x ++ "\n") x)-} $ fertilizerToWaterMap,
+    almanacWaterToLightMap          = foldl' addIntervalFromTriple emptyIntervalMap . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nwaterToLightMap: "          ++ show x ++ "\n") x)-} $ waterToLightMap,
+    almanacLightToTemperatureMap    = foldl' addIntervalFromTriple emptyIntervalMap . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nlightToTemperatureMap: "    ++ show x ++ "\n") x)-} $ lightToTemperatureMap,
+    almanacTemperatureToHumidityMap = foldl' addIntervalFromTriple emptyIntervalMap . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\ntemperatureToHumidityMap: " ++ show x ++ "\n") x)-} $ temperatureToHumidityMap,
+    almanacHumidityToLocationMap    = foldl' addIntervalFromTriple emptyIntervalMap . map (map read) . map (splitOn " ") . lines {-. (\x -> trace ("\nhumidityToLocationMap: "    ++ show x ++ "\n") x)-} $ humidityToLocationMap
     }
   where (seedsStr,                 after1) = break (=='\n') (drop (length "seeds: ") $ inStr)
         (seedToSoilMapStr,         after2) = (\(f,s) -> (take ((length f) - length "\n\nsoil-to-fertilizer map") f, drop (length ":\n") s)) . break (==':') $ (drop (length "\n\nseed-to-soil map:\n") $ after1)
@@ -93,55 +93,51 @@ readAlmanac2 inStr = Almanac {
         (temperatureToHumidityMap, after7) = (\(f,s) -> (take ((length f) - length "\n\nhumidity-to-location map") f, drop (length ":\n") s)) . break (==':') $ after6
         humidityToLocationMap = after7
 
-seedRangesFromPairs :: [Int] -> [Range]
-seedRangesFromPairs xs = map (\[start,range] -> Interval start range) . chunksOf 2 $ xs
+seedIntervalsFromPairs :: [Int] -> [Interval]
+seedIntervalsFromPairs xs = map (\[start,range] -> intervalFromStartAndRange start range) . chunksOf 2 $ xs
 
-destinationAndRangeFromSourceMapFromTriple :: [Int] -> DestinationAndRangeFromSourceMap
-destinationAndRangeFromSourceMapFromTriple [destStart, sourceStart, range] = M.fromList [(sourceStart, (destStart, range))]
-destinationAndRangeFromSourceMapFromTriple x = error (show x)
+addIntervalFromTriple :: IntervalMap -> [Int] -> IntervalMap
+addIntervalFromTriple (IntervalMap from to) [destStart, sourceStart, range] = IntervalMap (intervalFromStartAndRange sourceStart range:from) (intervalFromStartAndRange destStart range:to)
+addIntervalFromTriple x y = error (show (x,y))
 
-lookupFromMap :: DestinationAndRangeFromSourceMap -> Int -> Int
-lookupFromMap m k = case maybeInfimum of
-    Nothing -> k
-    Just lower -> let (destStart, range) = fromJust $ M.lookup lower m
-                  in if k < lower + range
-                     then destStart + (k - lower)
-                     else k
-  where keys = M.keys m
-        sortedKeys = sort keys
-        lowerKeys = takeWhile (<= k) keys
-        maybeInfimum = if null lowerKeys then Nothing else Just $ last lowerKeys
+-- lookupFromMap :: DestinationAndRangeFromSourceMap -> Int -> Int
+-- lookupFromMap m k = case maybeInfimum of
+    -- Nothing -> k
+    -- Just lower -> let (destStart, range) = fromJust $ M.lookup lower m
+                  -- in if k < lower + range
+                     -- then destStart + (k - lower)
+                     -- else k
+  -- where keys = M.keys m
+        -- sortedKeys = sort keys
+        -- lowerKeys = takeWhile (<= k) keys
+        -- maybeInfimum = if null lowerKeys then Nothing else Just $ last lowerKeys
 
-lookupIntervalsFromMap :: DestinationAndRangeFromSourceMap -> Range -> [Range]
-lookupIntervalsFromMap m interval = case maybeInfimum of
-        Nothing -> k
-        Just lower -> let (destStart, range) = fromJust $ M.lookup lower m
-                      in if k < lower + range
-                         then destStart + (k - lower)
-                         else k
-  where start = intervalStart interval
-        end   = intervalEnd interval
-        keys = M.keys m
-        sortedKeys = sort keys
-        lowerKeys = takeWhile (<= k) keys
-        maybeInfimum = if null lowerKeys then Nothing else Just $ last lowerKeys
+-- lookupIntervalsFromMap :: DestinationAndRangeFromSourceMap -> Interval -> [Interval]
+-- lookupIntervalsFromMap m (Interval start end)
+    -- = let start = intervalStart interval
+          -- end   = intervalEnd interval
+          -- lookupFromMap
 
-data Interval = Interval {intervalStart :: Int, intervalRange :: Int}
+applyIntervalMap :: [Interval] -> IntervalMap -> [Interval]
+applyIntervalMap intervals m = concatMap applyMap intervals
+  where applyMap :: Interval -> IntervalMap -> [Interval]
+        applyMap interval (f:from, t:to) = applyInterval interval (f,t)
+        
+        applyInterval :: Interval -> (Interval,Interval) -> [Interval]
+        applyInterval (Interval start end) (Interval sourceStart sourceEnd, Interval destinationStart destinationEnd)
+            | sourceEnd < start = [Interval start end]
+            | sourceStart <= start && sourceEnd >= end = [Interval f - start (t + end - start)]
+            | sourceStart <= start && sourceEnd >= end = [Interval start t, Interval (t+1) end]
+            | sourceStart < start = [Interval start t, Interval (t+1) end]
 
-data Range = Range Interval
-           | BoundedBelow Int
-           | BoundedAbove Int
-           | Unbounded
+data Interval = Interval {intervalStart :: Int, intervalEnd :: Int} deriving (Show)
 
-intervalEnd :: Interval -> Int
-intervalEnd i = intervalStart i + intervalRange i - 1
-
-intervalFromStartEnd :: Int -> Int -> Interval
-intervalFromStartEnd start end = Interval start (end - start + 1)
+intervalFromStartAndRange :: Int -> Int -> Interval
+intervalFromStartAndRange start range = Interval start (start + range - 1)
 
 locations :: Almanac -> [Int]
 locations (Almanac 
-    seedRanges
+    seedIntervals
     seedToSoilMap
     soilToFertilizerMap
     fertilizerToWaterMap
@@ -149,16 +145,16 @@ locations (Almanac
     lightToTemperatureMap
     temperatureToHumidityMap
     humidityToLocationMap)
-    = flip map seedRanges $ \(Interval start range)@interval -> 
-        let end         = intervalEnd interval
-            soil        = lookupFromMap seedToSoilMap seed
-            fertilizer  = lookupFromMap soilToFertilizerMap soil
-            water       = lookupFromMap fertilizerToWaterMap fertilizer
-            light       = lookupFromMap waterToLightMap water
-            temperature = lookupFromMap lightToTemperatureMap light
-            humidity    = lookupFromMap temperatureToHumidityMap temperature
-            location    = lookupFromMap humidityToLocationMap humidity
-        in location
+    = let locationIntervals = foldl' applyIntervalMap seedIntervals [
+            seedToSoilMap,
+            soilToFertilizerMap,
+            fertilizerToWaterMap,
+            waterToLightMap,
+            lightToTemperatureMap,
+            temperatureToHumidityMap,
+            humidityToLocationMap
+            ]
+      in map intervalStart locationIntervals
 
 day5part1 = do
   contents <- readFile "day5 (data).csv"
