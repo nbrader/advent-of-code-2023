@@ -119,16 +119,24 @@ addIntervalFromTriple x y = error (show (x,y))
           -- lookupFromMap
 
 applyIntervalMap :: [Interval] -> IntervalMap -> [Interval]
-applyIntervalMap intervals m = concatMap applyMap intervals
-  where applyMap :: Interval -> IntervalMap -> [Interval]
-        applyMap interval (f:from, t:to) = applyInterval interval (f,t)
+applyIntervalMap intervals m = concatMap (applyMap m) intervals
+  where applyMap :: IntervalMap -> Interval -> [Interval]
+        applyMap (IntervalMap [] [])           interval = [interval]
+        applyMap (IntervalMap (f:from) (t:to)) interval = concatMap (applyMap (IntervalMap from to)) (applyInterval interval (f,t))
         
         applyInterval :: Interval -> (Interval,Interval) -> [Interval]
         applyInterval (Interval start end) (Interval sourceStart sourceEnd, Interval destinationStart destinationEnd)
-            | sourceEnd < start = [Interval start end]
-            | sourceStart <= start && sourceEnd >= end = [Interval f - start (t + end - start)]
-            | sourceStart <= start && sourceEnd >= end = [Interval start t, Interval (t+1) end]
-            | sourceStart < start = [Interval start t, Interval (t+1) end]
+            | end   <  sourceStart                                           = [Interval start end]
+            | start <  sourceStart && end <  sourceEnd                       = [Interval start (sourceStart-1), Interval destinationStart (destinationStart + end - sourceStart)]
+            | start <  sourceStart && end == sourceEnd                       = undefined
+            | start <  sourceStart && end >  sourceEnd                       = undefined
+            | start == sourceStart && end <  sourceEnd                       = undefined
+            | start == sourceStart && end == sourceEnd                       = undefined
+            | start == sourceStart && end >  sourceEnd                       = undefined
+            | start >  sourceStart && end <  sourceEnd && start <= sourceEnd = undefined
+            | start >  sourceStart && end == sourceEnd && start <= sourceEnd = undefined
+            | start >  sourceStart && end >  sourceEnd && start <= sourceEnd = undefined
+            | otherwise                                                      = [Interval start end]
 
 data Interval = Interval {intervalStart :: Int, intervalEnd :: Int} deriving (Show)
 
