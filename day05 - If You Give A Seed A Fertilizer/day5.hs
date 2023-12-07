@@ -150,7 +150,7 @@ locations (Almanac
     lightToTemperatureMap
     temperatureToHumidityMap
     humidityToLocationMap)
-    = let locationIntervals = foldl' applyIntervalMap seedIntervals $ reverse [
+    = let locationIntervals = foldl' applyIntervalMap seedIntervals [
             seedToSoilMap,
             soilToFertilizerMap,
             fertilizerToWaterMap,
