@@ -127,15 +127,15 @@ applyIntervalMap intervals m = concatMap (applyMap m) intervals
         applyInterval :: (Interval,Interval) -> Interval -> [Interval]
         applyInterval (Interval sourceStart sourceEnd, Interval destinationStart destinationEnd) (Interval start end)
             | end   <  sourceStart                                           = [Interval start end]
-            | start <  sourceStart && end <  sourceEnd                       = [Interval start (sourceStart-1), Interval destinationStart (destinationStart + end - sourceStart)]
-            | start <  sourceStart && end == sourceEnd                       = undefined
-            | start <  sourceStart && end >  sourceEnd                       = undefined
-            | start == sourceStart && end <  sourceEnd                       = undefined
-            | start == sourceStart && end == sourceEnd                       = undefined
-            | start == sourceStart && end >  sourceEnd                       = undefined
-            | start >  sourceStart && end <  sourceEnd && start <= sourceEnd = undefined
-            | start >  sourceStart && end == sourceEnd && start <= sourceEnd = undefined
-            | start >  sourceStart && end >  sourceEnd && start <= sourceEnd = undefined
+            | start <  sourceStart && end <  sourceEnd                       = [Interval start (sourceStart-1), Interval destinationStart (end + destinationStart - sourceStart)]
+            | start <  sourceStart && end == sourceEnd                       = [Interval start (sourceStart-1), Interval destinationStart destinationEnd]
+            | start <  sourceStart && end >  sourceEnd                       = [Interval start (sourceStart-1), Interval destinationStart destinationEnd, Interval (sourceEnd+1) end]
+            | start == sourceStart && end <  sourceEnd                       = [Interval destinationStart (end + destinationStart - sourceStart)]
+            | start == sourceStart && end == sourceEnd                       = [Interval destinationStart destinationEnd]
+            | start == sourceStart && end >  sourceEnd                       = [Interval destinationStart destinationEnd, Interval (sourceEnd+1) end]
+            | start >  sourceStart && end <  sourceEnd && start <= sourceEnd = [Interval (start + destinationStart - sourceStart) (end + destinationStart - sourceStart)]
+            | start >  sourceStart && end == sourceEnd && start <= sourceEnd = [Interval (start + destinationStart - sourceStart) destinationEnd]
+            | start >  sourceStart && end >  sourceEnd && start <= sourceEnd = [Interval (start + destinationStart - sourceStart) destinationEnd, Interval (sourceEnd+1) end]
             | otherwise                                                      = [Interval start end]
 
 data Interval = Interval {intervalStart :: Int, intervalEnd :: Int} deriving (Show)
