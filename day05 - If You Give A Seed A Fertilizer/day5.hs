@@ -150,13 +150,13 @@ locations (Almanac
     temperatureToHumidityMap
     humidityToLocationMap)
     = let locationIntervals = foldl' applyIntervalMap seedIntervals [
-            seedToSoilMap,
-            soilToFertilizerMap,
-            fertilizerToWaterMap,
-            waterToLightMap,
-            lightToTemperatureMap,
-            temperatureToHumidityMap,
-            humidityToLocationMap
+            seedToSoilMap--,
+            -- soilToFertilizerMap,
+            -- fertilizerToWaterMap,
+            -- waterToLightMap,
+            -- lightToTemperatureMap,
+            -- temperatureToHumidityMap,
+            -- humidityToLocationMap
             ]
       in map intervalStart locationIntervals
 
