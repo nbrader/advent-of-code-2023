@@ -160,12 +160,22 @@ locations (Almanac
             ]
       in map intervalStart locationIntervals
 
+-- day5part1 = do
+  -- contents <- readFile "day5 (data).csv"
+  -- let closest = minimum . locations . readAlmanac $ contents
+  -- print $ closest
+
+-- day5part2 = do
+  -- contents <- readFile "day5 (data).csv"
+  -- let closest = minimum . locations . readAlmanac2 $ contents
+  -- print $ closest
+
 day5part1 = do
-  contents <- readFile "day5 (data).csv"
-  let closest = minimum . locations . readAlmanac $ contents
+  contents <- readFile "day5 (example).csv"
+  let closest = locations . readAlmanac $ contents
   print $ closest
 
 day5part2 = do
-  contents <- readFile "day5 (data).csv"
-  let closest = minimum . locations . readAlmanac2 $ contents
+  contents <- readFile "day5 (example).csv"
+  let closest = locations . readAlmanac2 $ contents
   print $ closest
