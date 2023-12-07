@@ -122,10 +122,10 @@ applyIntervalMap :: [Interval] -> IntervalMap -> [Interval]
 applyIntervalMap intervals m = concatMap (applyMap m) intervals
   where applyMap :: IntervalMap -> Interval -> [Interval]
         applyMap (IntervalMap [] [])           interval = [interval]
-        applyMap (IntervalMap (f:from) (t:to)) interval = concatMap (applyMap (IntervalMap from to)) (applyInterval interval (f,t))
+        applyMap (IntervalMap (f:from) (t:to)) interval = concatMap (applyMap (IntervalMap from to)) (applyInterval (f,t) interval)
         
-        applyInterval :: Interval -> (Interval,Interval) -> [Interval]
-        applyInterval (Interval start end) (Interval sourceStart sourceEnd, Interval destinationStart destinationEnd)
+        applyInterval :: (Interval,Interval) -> Interval -> [Interval]
+        applyInterval (Interval sourceStart sourceEnd, Interval destinationStart destinationEnd) (Interval start end)
             | end   <  sourceStart                                           = [Interval start end]
             | start <  sourceStart && end <  sourceEnd                       = [Interval start (sourceStart-1), Interval destinationStart (destinationStart + end - sourceStart)]
             | start <  sourceStart && end == sourceEnd                       = undefined
