@@ -15,10 +15,10 @@
 -- Output --
 ------------
 -- *Main> day8part1
--- 
+-- 21251
 
 -- *Main> day8part2
--- 
+-- 11678319315857
 
 
 -------------
@@ -62,25 +62,10 @@ readPaper inStr
         readTargets = (\[l,r] -> (l,r)) . words . map (\c -> if isAlphaNum c then c else ' ')
 
 unsafeLookup :: (Show k, Show v, Ord k) => k -> M.Map k v -> v
--- unsafeLookup x m = fromJust $ M.lookup ((trace ("\nlooking up: " ++ show x ++ " from: " ++ show m ++ "\n\n")) $ x) m
 unsafeLookup x m = fromJust $ M.lookup x m
-
--- paperRunLength :: Paper -> Int
--- paperRunLength p = length . takeWhile (\loc -> loc /= "ZZZ") . scanr (\dir loc -> let (left, right) = unsafeLookup loc (piNetwork p) in case dir of {'L' -> left; 'R' -> right} ) "AAA" . repeatedDirsReversed $ p
 
 paperRunLength :: Paper -> Int
 paperRunLength p = (\(loc,dirs,count) -> count) . (\initDirs -> until (\(loc,dirs,count) -> {-trace loc $-} loc == "ZZZ") (\(loc,(dir:dirs),count) -> (let (left,right) = unsafeLookup loc (piNetwork p) in case dir of {'L' -> left; 'R' -> right},dirs,count+1)) ("AAA",initDirs,0)) . repeatedDirs $ p
-
--- paperRunLength2 :: Paper -> Int
--- paperRunLength2 p = (\(locs,dirs,count) -> count) . (\initDirs -> until (\(locs,dirs,count) -> {-trace (intercalate "\n" locs ++ "\n") $-} all (`elem` ends) locs) (\(locs,(dir:dirs),count) -> (let leftAndrights = map (\loc -> unsafeLookup loc (piNetwork p)) locs in map (\(left,right) -> case dir of {'L' -> left; 'R' -> right}) leftAndrights,dirs,count+1)) (starts ,initDirs,0)) . repeatedDirs $ p
-  -- where starts = nodesThatEndWithA p
-        -- ends   = nodesThatEndWithZ p
-
--- runLengthsAndCycleStartFromStartLoc :: Paper -> String -> (String, Int, [Int], [(String, Int)])
--- runLengthsAndCycleStartFromStartLoc p start = until (\(loc,count,lengths,visited) -> {-trace (show (loc,count `mod` n)) $-} (loc,count `mod` n) `elem` visited) (\(loc,count,lengths,visited) -> let {(left,right) = unsafeLookup loc (piNetwork p); newLoc = case (dirs !! (count `mod` n)) of {'L' -> left; 'R' -> right}; isEnd = newLoc `elem` ends} in (newLoc,count+1,if isEnd then (count+1):lengths else lengths,(loc,count `mod` n):visited)) (start,0,[],[])
-  -- where ends = nodesThatEndWithZ p
-        -- dirs = piDirs p
-        -- n = length dirs
 
 endLocsAndCycleStartAndCycleEndFromStartLoc :: Paper -> String -> ([Int],Int,Int)
 endLocsAndCycleStartAndCycleEndFromStartLoc p start = interpretAsEndLocsAndCycleStartAndCycleEnd $ until (\(loc,count,lengths,visited) -> {-trace (show (loc,count `mod` n)) $-} (loc,count `mod` n) `elem` visited) (\(loc,count,lengths,visited) -> let {(left,right) = unsafeLookup loc (piNetwork p); newLoc = case (dirs !! (count `mod` n)) of {'L' -> left; 'R' -> right}; isEnd = newLoc `elem` ends} in (newLoc,count+1,if isEnd then (count+1):lengths else lengths,(loc,count `mod` n):visited)) (start,0,[],[])
@@ -89,8 +74,7 @@ endLocsAndCycleStartAndCycleEndFromStartLoc p start = interpretAsEndLocsAndCycle
         n = length dirs
         
         interpretAsEndLocsAndCycleStartAndCycleEnd :: (String, Int, [Int], [(String, Int)]) -> ([Int],Int,Int)
-        interpretAsEndLocsAndCycleStartAndCycleEnd (loc,count,lengths,visited) = (lengths, length $ takeWhile ((/= loc). fst) $ reverse visited, length visited - 1)
-
+        interpretAsEndLocsAndCycleStartAndCycleEnd (loc,count,lengths,visited) = (lengths, length $ takeWhile ((/= (loc,count `mod` n))) $ reverse visited, length visited - 1)
 
 nodesThatEndWithA :: Paper -> [String]
 nodesThatEndWithA = filter ((=='A') . last) . M.keys . piNetwork
@@ -105,10 +89,10 @@ repeatedDirsReversed :: Paper -> String
 repeatedDirsReversed p = reverse (piDirs p) ++ repeatedDirsReversed p
 
 day8part1 = do
-  contents <- readFile "day8 (data).csv"
+  contents <- readFile "day8 (data 3).csv"
   print . paperRunLength . readPaper $ contents
 
 day8part2 = do
-  contents <- readFile "day8 (data).csv"
-  print . map (\([endLoc],cycleStart,cycleEnd) -> ((cycleEnd - cycleStart),cycleStart,endLoc `mod` (cycleEnd - cycleStart))) . (\p -> map (endLocsAndCycleStartAndCycleEndFromStartLoc p) (nodesThatEndWithA p)) . readPaper $ contents
--- [(21250,3,1),(18022,2,1),(16408,2,1),(11566,4,1),(14256,3,1),(15870,2,1)]
+  contents <- readFile "day8 (data 3).csv"
+  print . foldl' lcm 1 . map (\([n],_,_) -> n) --  <--- This part of the solution isn't truly general but might work for all inputs advent of code gives
+    . (\p -> map (endLocsAndCycleStartAndCycleEndFromStartLoc p) (nodesThatEndWithA p)) . readPaper $ contents -- [([21251],3,21253),([18023],2,18024),([16409],2,16410),([11567],4,11570),([14257],3,14259),([15871],2,15872)]
