@@ -52,7 +52,6 @@ toDifferenceSequences xs = until end step [xs]
         end :: [[Int]] -> Bool
         end = (all (==0) . head)
 
-
 extrapolate :: [Int] -> Int
 extrapolate = sum . map last . toDifferenceSequences
 
