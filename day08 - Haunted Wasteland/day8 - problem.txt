@@ -29,9 +29,7 @@ BBB = (AAA, ZZZ)
 ZZZ = (ZZZ, ZZZ)
 Starting at AAA, follow the left/right instructions. How many steps are required to reach ZZZ?
 
-Your puzzle answer was 17287.
-
-The first half of this puzzle is complete! It provides one gold star: *
+Your puzzle answer was 21251.
 
 --- Part Two ---
 The sandstorm is upon you and you aren't any closer to escaping the wasteland. You had the camel follow the instructions, but you've barely left your starting position. It's going to take significantly more steps to escape!
@@ -64,3 +62,7 @@ Step 6: You choose all of the right paths, leading you to 11Z and 22Z.
 So, in this example, you end up entirely on nodes that end in Z after 6 steps.
 
 Simultaneously start on every node that ends with A. How many steps does it take before you're only on nodes that end with Z?
+
+Your puzzle answer was 11678319315857.
+
+Both parts of this puzzle are complete! They provide two gold stars: **
