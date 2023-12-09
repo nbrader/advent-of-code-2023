@@ -59,9 +59,9 @@ extrapolateBack :: [Int] -> Int
 extrapolateBack = foldl' (subtract) 0 . map head . toDifferenceSequences
 
 day9part1 = do
-  contents <- readFile "day9 (data 3).csv"
+  contents <- readFile "day9 (data).csv"
   print . sum . map extrapolate . map readSeqence . lines $ contents
 
 day9part2 = do
-  contents <- readFile "day9 (data 3).csv"
+  contents <- readFile "day9 (data).csv"
   print . sum . map extrapolateBack . map readSeqence . lines $ contents

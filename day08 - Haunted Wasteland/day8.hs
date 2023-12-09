@@ -89,10 +89,10 @@ repeatedDirsReversed :: Paper -> String
 repeatedDirsReversed p = reverse (piDirs p) ++ repeatedDirsReversed p
 
 day8part1 = do
-  contents <- readFile "day8 (data 3).csv"
+  contents <- readFile "day8 (data).csv"
   print . paperRunLength . readPaper $ contents
 
 day8part2 = do
-  contents <- readFile "day8 (data 3).csv"
+  contents <- readFile "day8 (data).csv"
   print . foldl' lcm 1 . map (\([n],_,_) -> n) --  <--- This part of the solution isn't truly general but might work for all inputs advent of code gives
     . (\p -> map (endLocsAndCycleStartAndCycleEndFromStartLoc p) (nodesThatEndWithA p)) . readPaper $ contents -- [([21251],3,21253),([18023],2,18024),([16409],2,16410),([11567],4,11570),([14257],3,14259),([15871],2,15872)]

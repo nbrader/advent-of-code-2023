@@ -118,9 +118,9 @@ readHandWithJokers :: String -> HandWithJokers
 readHandWithJokers = HandWithJokers . readHand
 
 day7part1 = do
-  contents <- readFile "day7 (data 3).csv"
+  contents <- readFile "day7 (data).csv"
   print $ sum . map (\(i,h) -> i * handBid h) . zip [1..] . sort . map readHand . lines $ contents
 
 day7part2 = do
-  contents <- readFile "day7 (data 3).csv"
+  contents <- readFile "day7 (data).csv"
   print $ sum . map (\(i,h) -> i * handWithJokersBid h) . zip [1..] . sort . map readHandWithJokers . lines $ contents

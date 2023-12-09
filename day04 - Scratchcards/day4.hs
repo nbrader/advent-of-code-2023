@@ -63,7 +63,7 @@ intersect [] = const []
 intersect xs = filter (`elem` xs)
 
 day4part1 = do
-  contents <- readFile "day4 (data 3).csv"
+  contents <- readFile "day4 (data).csv"
   let total = sum . map (pointsFromGame . readGame) . lines $ contents
   print $ total
 
@@ -79,6 +79,6 @@ cards gs = go
                     n -> 1 + (sum $ map f [(i+1) .. (min (length gs - 1) (i+n))])
 
 day4part2 = do
-  contents <- readFile "day4 (data 3).csv"
+  contents <- readFile "day4 (data).csv"
   let total = sum . (\gs -> map (fix (memoize . cards gs)) ([0..(length gs - 1)])) . map readGame . lines $ contents
   print $ total
