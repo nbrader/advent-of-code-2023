@@ -32,8 +32,8 @@ import Data.List (foldl')
 -------------
 main = day9part1
 
-readSeqence :: String -> [Int]
-readSeqence = map read . words
+readSequence :: String -> [Int]
+readSequence = map read . words
 
 toDifferenceSequences :: [Int] -> [[Int]]
 toDifferenceSequences xs = until end step [xs]
@@ -51,8 +51,8 @@ extrapolateBack = foldl' (subtract) 0 . map head . toDifferenceSequences
 
 day9part1 = do
   contents <- readFile "day9 (data).csv"
-  print . sum . map extrapolate . map readSeqence . lines $ contents
+  print . sum . map extrapolate . map readSequence . lines $ contents
 
 day9part2 = do
   contents <- readFile "day9 (data).csv"
-  print . sum . map extrapolateBack . map readSeqence . lines $ contents
+  print . sum . map extrapolateBack . map readSequence . lines $ contents
