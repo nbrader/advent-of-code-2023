@@ -1,5 +1,5 @@
 #!/usr/bin/env stack
--- stack --resolver lts-18.22 ghci --package split-0.2.3.5 --package containers-0.6.5.1
+-- stack --resolver lts-18.22 ghci --package split-0.2.3.5
 
 ----------------------------------
 ----------------------------------
@@ -8,7 +8,7 @@
 ----------------------------------
 {-
     To build, run the following shell command in this directory:
-        stack --resolver lts-20.5 ghc --package split-0.2.3.5 --package containers-0.6.5.1 -- '.\day2.hs' -O2
+        stack --resolver lts-20.5 ghc --package split-0.2.3.5 -- '.\day2.hs' -O2
 -}
 
 ------------
@@ -24,11 +24,9 @@
 -------------
 -- Imports --
 -------------
-import Data.Char (isDigit)
-import Data.List (sort, tails, isPrefixOf, lookup)
+import Data.List (lookup)
 import Data.List.Split (splitOn)
-import Data.Maybe
-import Debug.Trace (trace)
+import Data.Maybe (fromMaybe)
 
 
 -------------

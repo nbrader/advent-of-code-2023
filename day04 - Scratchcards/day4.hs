@@ -1,5 +1,5 @@
 #!/usr/bin/env stack
--- stack --resolver lts-21.22 ghci --package split-0.2.3.5 --package containers-0.6.7 --package linear-1.22 --package fastmemo-0.1.1
+-- stack --resolver lts-21.22 ghci --package fastmemo-0.1.1
 
 --------------------------------
 --------------------------------
@@ -8,7 +8,7 @@
 --------------------------------
 {-
     To build, run the following shell command in this directory:
-        stack --resolver lts-21.22 ghc --package split-0.2.3.5 --package containers-0.6.7 --package linear-1.22
+        stack --resolver lts-21.22 ghc -- '.\day4.hs' -O2
 -}
 
 ------------
@@ -24,13 +24,8 @@
 -------------
 -- Imports --
 -------------
-import Data.Char (isDigit)
-import Data.List (sort, tails, isPrefixOf, groupBy, find, nub)
-import Data.Maybe
-import Debug.Trace (trace)
-import Data.Map as M hiding (map, filter, take, drop)
-import Data.Tuple (swap)
-import Data.Function (on, fix)
+import Data.List (sort)
+import Data.Function (fix)
 import Data.Function.FastMemo (memoize)
 
 
