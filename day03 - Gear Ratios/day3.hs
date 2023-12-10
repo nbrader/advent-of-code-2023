@@ -50,14 +50,12 @@ data Char2D = Char2D {
 
 data Schematic = Schematic {
     schematicDims :: V2 Int,
-    schematicNums :: [Number],
-    schematicNumFromPos :: M.Map (V2 Int) Number,
     schematicSymbols :: [Char2D],
-    schematicSymbolToNums :: M.Map Char2D [Number]
+    schematicSymbolToNums :: [(Char2D,[Int])]
     }
 
 readSchematic :: String -> Schematic
-readSchematic inStr = Schematic dims nums numFromPos symbols symbolToNums
+readSchematic inStr = Schematic dims symbols symbolToNums
   where rows = lines inStr
         
         dims = V2 (length . head $ rows) (length rows)
@@ -86,7 +84,7 @@ readSchematic inStr = Schematic dims nums numFromPos symbols symbolToNums
                       . map removeNonDigitGroups
                       . map groupByIsDigit $ symbolsAndDigitsRows
         
-        numFromPos = M.fromList [(pos,num) | num <- nums, pos <- numV2s num]
+        numFromPos = M.fromList [(pos, numberInt num) | num <- nums, pos <- numV2s num]
         
         nonDigit symbol = let char = symbolChar symbol
                           in not (isDigit char) && not (char == '.')
@@ -100,40 +98,31 @@ readSchematic inStr = Schematic dims nums numFromPos symbols symbolToNums
             guard $ not (x == 0 && y == 0)
             return $ V2 x y
         
-        symbolToNumsPairs :: [(Char2D,[Number])]
-        symbolToNumsPairs = do
+        symbolToNums :: [(Char2D,[Int])]
+        symbolToNums = do
             s <- symbols
             let positions = map ((symbolV2 s) +) dirs
                 numbers = nub . concatMap (\pos -> maybeToList $ M.lookup pos numFromPos) $ positions
             return (s, numbers)
-        
-        symbolToNums = M.fromList symbolToNumsPairs
 
 day3part1 = do
   contents <- readFile "day3 (data).csv"
-  let total = sum . concat . map snd
-                  . (\schematic -> map
-                        (fmap (map numberInt) . (\symbol ->
-                                (
-                                    symbol,
-                                    fromJust $ M.lookup symbol (schematicSymbolToNums schematic)
-                                )
-                            )
-                        ) $ schematicSymbols schematic
-                    ) . readSchematic $ contents
+  let schematic = readSchematic contents
+      symbolToNums = schematicSymbolToNums schematic
+      
+      total = sum . concat
+                  . map snd
+                  $ symbolToNums
   print $ total
 
 day3part2 = do
   contents <- readFile "day3 (data).csv"
+  let schematic = readSchematic contents
+      symbolToNums = schematicSymbolToNums schematic
+
+  
   let total = sum . map (\(s,ns) -> product ns)
                   . filter ((== 2) . length . snd)
                   . filter ((== '*') . symbolChar . fst)
-                  . (\schematic -> map
-                        (fmap (map numberInt) . (\symbol ->
-                                (
-                                    symbol,
-                                    fromJust $ M.lookup symbol (schematicSymbolToNums schematic)
-                                )
-                            )
-                        ) $ schematicSymbols schematic) . readSchematic $ contents
+                  $ symbolToNums
   print $ total
