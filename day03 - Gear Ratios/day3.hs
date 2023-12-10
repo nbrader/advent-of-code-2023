@@ -49,16 +49,12 @@ data Char2D = Char2D {
     } deriving (Show, Ord, Eq)
 
 data Schematic = Schematic {
-    schematicDims :: V2 Int,
-    schematicSymbols :: [Char2D],
     schematicSymbolToNums :: [(Char2D,[Int])]
     }
 
 readSchematic :: String -> Schematic
-readSchematic inStr = Schematic dims symbols symbolToNums
+readSchematic inStr = Schematic symbolToNums
   where rows = lines inStr
-        
-        dims = V2 (length . head $ rows) (length rows)
         
         symbolsAndDigitsRows :: [[Char2D]]
         symbolsAndDigitsRows = do
