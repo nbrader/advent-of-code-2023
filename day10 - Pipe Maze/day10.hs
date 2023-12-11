@@ -36,7 +36,7 @@ import Debug.Trace (trace)
 -------------
 main = day10part1
 
-data Graph = Graph {graphEdgesFromV2 :: M.Map (V2 Int) [V2 Int], graphStart :: V2 Int} deriving (Show)
+data Graph = Graph {graphEdgesFromV2 :: M.Map (V2 Int) [V2 Int], graphStart :: V2 Int, graphBounds :: V2 Int} deriving (Show)
 
 vUp    = V2 ( 0) (-1)
 vDown  = V2 ( 0) ( 1)
@@ -63,11 +63,16 @@ charFromConnectedDirs ((False)) ( True) (False) ( True) = 'F'
 charFromConnectedDirs ((False)) (False) (False) (False) = '.'
 -- charFromConnectedDirs connUp connDown connLeft connRight
 
-readStart :: String -> (V2 Int, Char)
-readStart inStr = (V2 sX sY, char)
+readBounds :: String -> V2 Int
+readBounds inStr = V2 width height
   where rows = lines inStr
         width  = length . head . lines $ inStr
         height = length        . lines $ inStr
+
+readStart :: String -> V2 Int -> (V2 Int, Char)
+readStart inStr (V2 width height) = (V2 sX sY, char)
+  where rows = lines inStr
+        
         (beforeS,s:afterS) = break (== 'S') inStr
         sX = subtract 1 . length . last . lines $ beforeS++[s]
         sY = subtract 1 . length . lines $ beforeS++[s]
@@ -96,9 +101,10 @@ readPosToLabelMap :: String -> M.Map (V2 Int) Char
 readPosToLabelMap = M.fromList . readChar2D
 
 readGraph :: String -> Graph
-readGraph inStr = Graph edges startPos
+readGraph inStr = Graph edges startPos bounds
   where posToLabels = readPosToLabelMap inStr
-        (startPos, startChar) = readStart inStr
+        bounds = readBounds inStr
+        (startPos, startChar) = readStart inStr bounds
         posToLabelsReplacedStart = M.insert startPos startChar posToLabels
         
         edges = M.map dispsFromChar posToLabelsReplacedStart
@@ -107,7 +113,7 @@ lookupList :: (Ord k) => k -> M.Map k [a] -> [a]
 lookupList k m = concat . maybeToList $ M.lookup k m
 
 pathFromStart :: Graph -> [V2 Int]
-pathFromStart (Graph edges startPos)
+pathFromStart (Graph edges startPos bounds)
     = until returned step [startPos]
   where returned (v:[]) = False
         returned (v:_ ) = v == startPos
@@ -120,25 +126,43 @@ pathFromStart (Graph edges startPos)
                              in head $ filter (/= prevV) newVs
 
 day10part1 = do
-  contents <- readFile "day10 (data).csv"
+  contents <- readFile "day10 (data 3).csv"
   let graph = readGraph contents
   print . (`div` 2) . length . pathFromStart $ graph
 
 rot90 :: V2 Int -> V2 Int
-rot90 (V2 x y) = V2 y (-x)
+rot90 (V2 x y) = V2 (-y) x
 
-findInterior :: [V2 Int] -> [V2 Int]
-findInterior positions = nub . concat . map (\((pos,left),(prevPos, prevLeft)) -> rayUntilPath (pos+left) left ++ rayUntilPath (prevPos+left) left) $ zip posAndLefts prevs
-  where diffs :: [V2 Int]
+getX (V2 x y) = x
+getY (V2 x y) = y
+
+inBounds :: V2 Int -> V2 Int -> Bool
+inBounds (V2 x y) (V2 width height) = x >= 0 && x < width && y >= 0 && y < height
+
+findInterior :: V2 Int -> [V2 Int] -> [V2 Int]
+findInterior bounds positions = nub . concat . map (\((pos,left),(prevPos, prevLeft)) -> rayUntilPath (pos+left) left ++ rayUntilPath (prevPos+left) left) $ zip posAndSideDirs prevs
+  where leftInterior = all (\(pos,left) -> rayHitBounds (pos+left) left) posAndLeftDirs
+        
+        flipIfRightInterior
+            | leftInterior = id
+            | otherwise    = negate
+        
+        diffs :: [V2 Int]
         diffs = zipWith subtract (init positions) (tail positions)
         
-        posAndLefts :: [(V2 Int, V2 Int)]
-        posAndLefts = zip positions (map rot90 diffs)
+        posAndLeftDirs :: [(V2 Int, V2 Int)]
+        posAndLeftDirs = zip positions (map rot90 diffs)
         
-        prevs = drop 1 $ cycle posAndLefts
+        posAndSideDirs :: [(V2 Int, V2 Int)]
+        posAndSideDirs = zip positions (map (flipIfRightInterior . rot90) diffs)
+        
+        prevs = drop 1 $ cycle posAndSideDirs
         
         rayUntilPath :: V2 Int -> V2 Int -> [V2 Int]
         rayUntilPath start dir = tail $ until ((`elem` positions) . head) (\(v:vs) -> (v+dir):v:vs) [start]
+        
+        rayHitBounds :: V2 Int -> V2 Int -> Bool
+        rayHitBounds start dir = not . all (`inBounds` bounds) $ until ((\pos -> pos `elem` positions || not (pos `inBounds` bounds)) . head) (\(v:vs) -> (v+dir):v:vs) [start]
 
 writeCharsOnInput :: Char -> [V2 Int] -> String -> String
 writeCharsOnInput newChar positions inStr = unlines $ foldl' (writeChar newChar) (lines inStr) positions
@@ -157,9 +181,10 @@ writeChar newChar rows (V2 x y)= do
                           else newChar
 
 day10part2 = do
-  contents <- readFile "day10 (data).csv"
+  contents <- readFile "day10 (data 2).csv"
   let graph = readGraph contents
+      bounds = graphBounds graph
       path = pathFromStart graph
-      interior = findInterior path
+      interior = findInterior bounds path
   -- putStrLn . writeCharsOnInput 'I' interior . writeCharsOnInput '*' path $ contents
   print $ length interior
