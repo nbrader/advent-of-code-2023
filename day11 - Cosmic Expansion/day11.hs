@@ -60,7 +60,7 @@ allDistances :: [V2 Int] -> [Int]
 allDistances positions = [taxiCabDistance p1 p2 | let indices = take (length positions) [0..], i <- indices, j <- indices, i < j, let p1 = positions !! i, let p2 = positions !! j]
 
 allDistancesWithExpansions :: [V2 Int] -> [Int] -> [Int] -> Int -> [Int]
-allDistancesWithExpansions positions expandedRowIndices expandedColIndices expansionAmount = [taxiCabDistance p1 p2 + (numOfExpandedRowsBetween + numOfExpandedColsBetween) * (expansionAmount - 1) | let indices = take (length positions) [0..], i <- indices, j <- indices, i < j, let p1 = positions !! i, let p2 = positions !! j, let (V2 x1 y1) = p1, let (V2 x2 y2) = p2, let minX = min x1 x2, let maxX = max x1 x2, let minY = min y1 y2, let maxY = max y1 y2, let numOfExpandedRowsBetween = length . filter (\y' -> y' <= maxY) . filter (\y' -> y' >= minY) $ expandedColIndices, let numOfExpandedColsBetween = length . filter (\x' -> x' <= maxX) . filter (\x' -> x' >= minX) $ expandedRowIndices]
+allDistancesWithExpansions positions expandedRowIndices expandedColIndices expansionAmount = [taxiCabDistance p1 p2 + (numOfExpandedRowsBetween + numOfExpandedColsBetween) * (expansionAmount - 1) | let indices = take (length positions) [0..], i <- indices, j <- indices, i < j, let p1 = positions !! i, let p2 = positions !! j, let (V2 x1 y1) = p1, let (V2 x2 y2) = p2, let minX = min x1 x2, let maxX = max x1 x2, let minY = min y1 y2, let maxY = max y1 y2, let numOfExpandedRowsBetween = length . filter (\y' -> y' <= maxY) . filter (\y' -> y' >= minY) $ expandedRowIndices, let numOfExpandedColsBetween = length . filter (\x' -> x' <= maxX) . filter (\x' -> x' >= minX) $ expandedColIndices]
 
 day11part1 = do
   contents <- readFile "day11 (data).csv"
@@ -73,5 +73,5 @@ day11part2 = do
       emptyColIndices = catMaybes . map (\(i,row) -> if all (=='.') row then Just i else Nothing) . zip [0..] . transpose . lines $ contents
       
       distances :: [Int]
-      distances = allDistancesWithExpansions stars emptyRowIndices emptyColIndices 10
+      distances = allDistancesWithExpansions stars emptyRowIndices emptyColIndices 1000000
   print . sum $ distances
