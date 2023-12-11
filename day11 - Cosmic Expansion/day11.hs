@@ -26,7 +26,7 @@
 -------------
 import Data.List (foldl', nub, sort, transpose)
 import qualified Data.Map as M
-import Data.Maybe (fromJust, maybeToList)
+import Data.Maybe (fromJust, maybeToList, catMaybes)
 import Linear.V2
 import Control.Monad (guard)
 import Debug.Trace (trace)
@@ -53,8 +53,14 @@ readStars inStr = do
     guard $ char == '#'
     return (V2 x y)
 
+taxiCabDistance :: V2 Int -> V2 Int -> Int
+taxiCabDistance (V2 x1 y1) (V2 x2 y2) = abs (x2-x1) + abs (y2-y1)
+
 allDistances :: [V2 Int] -> [Int]
-allDistances positions = [abs (x2-x1) + abs (y2-y1) | let indices = take (length positions) [0..], i <- indices, j <- indices, i < j, let (V2 x1 y1) = positions !! i, let (V2 x2 y2) = positions !! j]
+allDistances positions = [taxiCabDistance p1 p2 | let indices = take (length positions) [0..], i <- indices, j <- indices, i < j, let p1 = positions !! i, let p2 = positions !! j]
+
+allDistancesWithExpansions :: [V2 Int] -> [Int] -> [Int] -> Int -> [Int]
+allDistancesWithExpansions positions expandedRowIndices expandedColIndices expansionAmount = [taxiCabDistance p1 p2 + (numOfExpandedRowsBetween + numOfExpandedColsBetween) * (expansionAmount - 1) | let indices = take (length positions) [0..], i <- indices, j <- indices, i < j, let p1 = positions !! i, let p2 = positions !! j, let (V2 x1 y1) = p1, let (V2 x2 y2) = p2, let minX = min x1 x2, let maxX = max x1 x2, let minY = min y1 y2, let maxY = max y1 y2, let numOfExpandedRowsBetween = length . filter (\y' -> y' <= maxY) . filter (\y' -> y' >= minY) $ expandedColIndices, let numOfExpandedColsBetween = length . filter (\x' -> x' <= maxX) . filter (\x' -> x' >= minX) $ expandedRowIndices]
 
 day11part1 = do
   contents <- readFile "day11 (data).csv"
@@ -62,4 +68,10 @@ day11part1 = do
 
 day11part2 = do
   contents <- readFile "day11 (data).csv"
-  print . sum . allDistances . readStars . expandUniverseStringMore $ contents
+  let stars = readStars contents
+      emptyRowIndices = catMaybes . map (\(i,row) -> if all (=='.') row then Just i else Nothing) . zip [0..] . lines $ contents
+      emptyColIndices = catMaybes . map (\(i,row) -> if all (=='.') row then Just i else Nothing) . zip [0..] . transpose . lines $ contents
+      
+      distances :: [Int]
+      distances = allDistancesWithExpansions stars emptyRowIndices emptyColIndices 10
+  print . sum $ distances
