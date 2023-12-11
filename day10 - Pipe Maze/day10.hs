@@ -1,11 +1,11 @@
 #!/usr/bin/env stack
 -- stack --resolver lts-21.22 ghci --package containers-0.6.7 --package linear-1.22
 
------------------------------
------------------------------
-----  Day 9:  Pipe Maze  ----
------------------------------
------------------------------
+------------------------------
+------------------------------
+----  Day 10:  Pipe Maze  ----
+------------------------------
+------------------------------
 {-
     To build, run the following shell command in this directory:
         stack --resolver lts-21.22 ghc --package containers-0.6.7 --package linear-1.22 -- '.\day10.hs' -O2
