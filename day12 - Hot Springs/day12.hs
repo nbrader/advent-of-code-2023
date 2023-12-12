@@ -43,24 +43,33 @@ data SpringRow = SpringRow {srConditionsStr :: String, srDamagedRuns :: [Int]} d
 readSpringRow :: String -> SpringRow
 readSpringRow = (\[conditionsStr,groupsStr] -> SpringRow conditionsStr (map read $ splitOn "," groupsStr)) . words
 
-arrangements :: SpringRow -> [String]
-arrangements (SpringRow ""            []                      ) = [""]
-arrangements (SpringRow ""            (damagedRun:damagedRuns)) = []
-arrangements (SpringRow conditionsStr [])
-    | all (\c -> c == '?' || c == '.') conditionsStr = [allAsUndamaged]
-    | otherwise                                      = []
-  where allAsUndamaged = replicate (length conditionsStr) '.'
-arrangements (SpringRow conditionsStr (damagedRun:damagedRuns))
-    | damagedPrefix `isPrefixOf` conditionsStr = map (damagedPrefix      ++) (sequence $ arrangements (SpringRow (drop damagedRun conditionsStr)             damagedRuns))
-    | otherwise                                = map (head conditionsStr : ) (sequence $ arrangements (SpringRow (tail            conditionsStr) (damagedRun:damagedRuns)))
-  where damagedPrefix = replicate damagedRun '#'
+ignore _ x = x
 
--- arrangementsWithPrefix
--- arrangementsWithPrefix prefix = 
+arrangements :: SpringRow -> [String]
+arrangements s@(SpringRow ""            []                      ) = let x = [""] in ignore ("show 1:" ++ show s ++ " = " ++ show x) x
+arrangements s@(SpringRow ""            (damagedRun:damagedRuns)) = let x = []   in ignore ("show 2:" ++ show s ++ " = " ++ show (x :: [String])) x
+arrangements s@(SpringRow conditionsStr [])
+    | all (\c -> c == '.' || c == '?') conditionsStr = let x = [allAsUndamaged] in ignore ("show 3:" ++ show s ++ " = " ++ show x) x
+    | otherwise                                      = let x = []               in ignore ("show 4:" ++ show s ++ " = " ++ show (x :: [String])) x
+  where allAsUndamaged = replicate (length conditionsStr) '.'
+arrangements s@(SpringRow conditionsStr (damagedRun:damagedRuns))
+    |    enoughCharsToHaveDamagedRun && matchesDamagedRun
+      && anyFollowingCharIsNonDamaged = let x = map ((damagedPrefix ++ followingCharStr) ++) . arrangements $ (SpringRow (drop (damagedRun + length followingCharStr) conditionsStr)             damagedRuns ) in ignore ("show 5:" ++ show s ++ " = " ++ show x) x
+                                                      ++ arrangementsStartingWithUndamaged
+    | otherwise                                        = arrangementsStartingWithUndamaged
+  where damagedPrefix = replicate damagedRun '#'
+        enoughCharsToHaveDamagedRun = length conditionsStr >= damagedRun
+        matchesDamagedRun = all (\c -> c == '#' || c == '?') $ take damagedRun conditionsStr
+        anyFollowingCharIsNonDamaged = (\xs -> case xs of {[] -> True; (x':_) -> x' /= '#'}) . drop damagedRun $ conditionsStr
+        followingCharStr = map (const '.') . (\xs -> case xs of {[] -> ""; (x':_) -> [x']}) . drop damagedRun $ conditionsStr
+        headUndamaged = (\c -> c == '.' || c == '?') . head $ conditionsStr
+        arrangementsStartingWithUndamaged
+            | headUndamaged = let x = map ('.':)             . arrangements $ (SpringRow (tail            conditionsStr) (damagedRun:damagedRuns)) in ignore ("show 6:" ++ show s ++ " = " ++ show x) x
+            | otherwise     = []
 
 day12part1 = do
-  contents <- readFile "day12 (example).csv"
-  mapM_ print . map arrangements . map readSpringRow . lines $ contents
+  contents <- readFile "day12 (data).csv"
+  print . sum . map length . map arrangements . map readSpringRow . lines $ contents
 
 -- day12part2 = do
   -- contents <- readFile "day12 (data).csv"
