@@ -24,7 +24,7 @@
 -------------
 -- Imports --
 -------------
-import Data.List (foldl', nub, sort, transpose, isPrefixOf)
+import Data.List (foldl', nub, sort, transpose, isPrefixOf, findIndex)
 import Data.List.Split (splitOn)
 import qualified Data.Map as M
 import Data.Maybe (fromJust, maybeToList, catMaybes)
@@ -46,13 +46,13 @@ readSpringRow = (\[conditionsStr,groupsStr] -> SpringRow conditionsStr (map read
 ignore _ x = x
 
 arrangements :: SpringRow -> [String]
-arrangements s@(SpringRow ""            []                      ) = [""]
-arrangements s@(SpringRow ""            (damagedRun:damagedRuns)) = []
-arrangements s@(SpringRow conditionsStr [])
+arrangements sr@(SpringRow ""            []                      ) = [""]
+arrangements sr@(SpringRow ""            (damagedRun:damagedRuns)) = []
+arrangements sr@(SpringRow conditionsStr [])
     | all (\c -> c == '.' || c == '?') conditionsStr = [allAsUndamaged]
     | otherwise                                      = []
   where allAsUndamaged = replicate (length conditionsStr) '.'
-arrangements s@(SpringRow conditionsStr (damagedRun:damagedRuns))
+arrangements sr@(SpringRow conditionsStr (damagedRun:damagedRuns))
     |    enoughCharsToHaveDamagedRun && matchesDamagedRun
       && anyFollowingCharIsNonDamaged = (map ((damagedPrefix ++ followingCharStr) ++) . arrangements $ (SpringRow (drop (damagedRun + length followingCharStr) conditionsStr) damagedRuns)) ++ arrangementsStartingWithUndamaged
     | otherwise                       = arrangementsStartingWithUndamaged
@@ -66,10 +66,25 @@ arrangements s@(SpringRow conditionsStr (damagedRun:damagedRuns))
             | headUndamaged = map ('.':) . arrangements $ (SpringRow (tail conditionsStr) (damagedRun:damagedRuns))
             | otherwise     = []
 
+-- foldedArrangements :: Int -> SpringRow -> [String]
+foldedArrangements dupeCount sr@(SpringRow conditionsStr damagedRuns)
+    = case after of
+        [] -> error "Handle this case if you see this message!"
+        _ -> concat $ do
+            numOfInitRuns <- [0 .. (length damagedRuns)]
+            let (initRuns,finalRuns) = splitAt numOfInitRuns damagedRuns
+            
+            return $ map concat $ sequence $ concat [
+                            [arrangements (SpringRow before initRuns)],
+                            replicate (dupeCount-1) (arrangements (SpringRow (concat [after, '?':before]) (concat [finalRuns, initRuns]))),
+                            [arrangements (SpringRow after finalRuns)]
+                            ]
+  where (before,after) = break (== '.') conditionsStr
+
 day12part1 = do
   contents <- readFile "day12 (data).csv"
   print . sum . map length . map arrangements . map readSpringRow . lines $ contents
 
--- day12part2 = do
-  -- contents <- readFile "day12 (data).csv"
-  -- print . sum . map length . map arrangements . map readSpringRow . lines $ contents
+day12part2 = do
+  contents <- readFile "day12 (data).csv"
+  print . sum . map length . map (foldedArrangements 5) . map readSpringRow . lines $ contents
