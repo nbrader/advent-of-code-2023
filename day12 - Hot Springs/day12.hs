@@ -46,17 +46,16 @@ readSpringRow = (\[conditionsStr,groupsStr] -> SpringRow conditionsStr (map read
 ignore _ x = x
 
 arrangements :: SpringRow -> [String]
-arrangements s@(SpringRow ""            []                      ) = let x = [""] in ignore ("show 1:" ++ show s ++ " = " ++ show x) x
-arrangements s@(SpringRow ""            (damagedRun:damagedRuns)) = let x = []   in ignore ("show 2:" ++ show s ++ " = " ++ show (x :: [String])) x
+arrangements s@(SpringRow ""            []                      ) = [""]
+arrangements s@(SpringRow ""            (damagedRun:damagedRuns)) = []
 arrangements s@(SpringRow conditionsStr [])
-    | all (\c -> c == '.' || c == '?') conditionsStr = let x = [allAsUndamaged] in ignore ("show 3:" ++ show s ++ " = " ++ show x) x
-    | otherwise                                      = let x = []               in ignore ("show 4:" ++ show s ++ " = " ++ show (x :: [String])) x
+    | all (\c -> c == '.' || c == '?') conditionsStr = [allAsUndamaged]
+    | otherwise                                      = []
   where allAsUndamaged = replicate (length conditionsStr) '.'
 arrangements s@(SpringRow conditionsStr (damagedRun:damagedRuns))
     |    enoughCharsToHaveDamagedRun && matchesDamagedRun
-      && anyFollowingCharIsNonDamaged = let x = map ((damagedPrefix ++ followingCharStr) ++) . arrangements $ (SpringRow (drop (damagedRun + length followingCharStr) conditionsStr)             damagedRuns ) in ignore ("show 5:" ++ show s ++ " = " ++ show x) x
-                                                      ++ arrangementsStartingWithUndamaged
-    | otherwise                                        = arrangementsStartingWithUndamaged
+      && anyFollowingCharIsNonDamaged = (map ((damagedPrefix ++ followingCharStr) ++) . arrangements $ (SpringRow (drop (damagedRun + length followingCharStr) conditionsStr) damagedRuns)) ++ arrangementsStartingWithUndamaged
+    | otherwise                       = arrangementsStartingWithUndamaged
   where damagedPrefix = replicate damagedRun '#'
         enoughCharsToHaveDamagedRun = length conditionsStr >= damagedRun
         matchesDamagedRun = all (\c -> c == '#' || c == '?') $ take damagedRun conditionsStr
@@ -64,7 +63,7 @@ arrangements s@(SpringRow conditionsStr (damagedRun:damagedRuns))
         followingCharStr = map (const '.') . (\xs -> case xs of {[] -> ""; (x':_) -> [x']}) . drop damagedRun $ conditionsStr
         headUndamaged = (\c -> c == '.' || c == '?') . head $ conditionsStr
         arrangementsStartingWithUndamaged
-            | headUndamaged = let x = map ('.':)             . arrangements $ (SpringRow (tail            conditionsStr) (damagedRun:damagedRuns)) in ignore ("show 6:" ++ show s ++ " = " ++ show x) x
+            | headUndamaged = map ('.':) . arrangements $ (SpringRow (tail conditionsStr) (damagedRun:damagedRuns))
             | otherwise     = []
 
 day12part1 = do
@@ -73,4 +72,4 @@ day12part1 = do
 
 -- day12part2 = do
   -- contents <- readFile "day12 (data).csv"
-  -- print . map SpringRow . lines $ contents
+  -- print . sum . map length . map arrangements . map readSpringRow . lines $ contents
