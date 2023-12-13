@@ -24,7 +24,7 @@
 -------------
 -- Imports --
 -------------
-import Data.List (foldl', nub, sort, transpose, isPrefixOf, findIndex)
+import Data.List (foldl', nub, sort, transpose, isPrefixOf, findIndex, intercalate)
 import Data.List.Split (splitOn)
 import qualified Data.Map as M
 import Data.Maybe (fromJust, maybeToList, catMaybes)
@@ -66,25 +66,51 @@ arrangements sr@(SpringRow conditionsStr (damagedRun:damagedRuns))
             | headUndamaged = map ('.':) . arrangements $ (SpringRow (tail conditionsStr) (damagedRun:damagedRuns))
             | otherwise     = []
 
--- foldedArrangements :: Int -> SpringRow -> [String]
+foldedArrangements :: Int -> SpringRow -> [String]
 foldedArrangements dupeCount sr@(SpringRow conditionsStr damagedRuns)
     = case after of
-        [] -> error "Handle this case if you see this message!"
-        _ -> concat $ do
-            numOfInitRuns <- [0 .. (length damagedRuns)]
-            let (initRuns,finalRuns) = splitAt numOfInitRuns damagedRuns
-            
-            return $ map concat $ sequence $ concat [
-                            [arrangements (SpringRow before initRuns)],
-                            replicate (dupeCount-1) (arrangements (SpringRow (concat [after, '?':before]) (concat [finalRuns, initRuns]))),
-                            [arrangements (SpringRow after finalRuns)]
-                            ]
+        [] -> naiveFoldedArrangements dupeCount (SpringRow conditionsStr damagedRuns)
+        _ -> case before of
+            [] -> map concat $ sequence $ (replicate (dupeCount-1) (arrangements (SpringRow (conditionsStr ++ "?") damagedRuns)) ++ [arrangements (SpringRow conditionsStr damagedRuns)])
+            _ -> concat $ do
+                    numOfInitRuns <- [0 .. (length damagedRuns)]
+                    let (initRuns,finalRuns) = splitAt numOfInitRuns damagedRuns
+                    
+                    return $ map concat $ sequence $ concat [
+                                    [arrangements (SpringRow before initRuns)],
+                                    replicate (dupeCount-1) (arrangements (SpringRow (concat [after, '?':before]) (concat [finalRuns, initRuns]))),
+                                    [arrangements (SpringRow after finalRuns)]
+                                    ]
   where (before,after) = break (== '.') conditionsStr
 
+numOfFoldedArrangements :: Int -> SpringRow -> Int
+numOfFoldedArrangements dupeCount sr@(SpringRow conditionsStr damagedRuns)
+    = case after of
+        [] -> length $ naiveFoldedArrangements dupeCount (SpringRow conditionsStr damagedRuns)
+        _ -> case before of 
+            [] -> (*dupeCount) $ length (arrangements (SpringRow (conditionsStr ++ "?") damagedRuns))
+            _ -> sum $ do
+                numOfInitRuns <- [0 .. (length damagedRuns)]
+                let (initRuns,finalRuns) = splitAt numOfInitRuns damagedRuns
+                
+                return $ product [
+                                     length $ arrangements (SpringRow before initRuns),
+                                    (length $ arrangements (SpringRow (concat [after, '?':before]) (concat [finalRuns, initRuns]))) ^ (dupeCount-1),
+                                     length $ arrangements (SpringRow after finalRuns)
+                                ]
+  where (before,after) = break (== '.') conditionsStr
+
+naiveFoldedArrangements dupeCount (SpringRow conditionsStr damagedRuns) = arrangements (SpringRow (intercalate "?" $ replicate dupeCount conditionsStr) (concat $ replicate dupeCount damagedRuns))
+
 day12part1 = do
-  contents <- readFile "day12 (data).csv"
+  contents <- readFile "day12 (example).csv"
   print . sum . map length . map arrangements . map readSpringRow . lines $ contents
 
+-- day12part2 = do
+  -- contents <- readFile "day12 (example).csv"
+  -- mapM_ print . map (numOfFoldedArrangements 5) . map readSpringRow . lines $ contents
+
 day12part2 = do
-  contents <- readFile "day12 (data).csv"
-  print . sum . map length . map (foldedArrangements 5) . map readSpringRow . lines $ contents
+  contents <- readFile "day12 (example).csv"
+  
+  mapM_ print . (foldedArrangements 5) . (!! 1) . map readSpringRow . lines $ contents
