@@ -36,7 +36,7 @@ import Debug.Trace (trace)
 -------------
 -- Program --
 -------------
-main = day12part1
+main = day12part2
 
 data SpringRow = SpringRow {srConditionsStr :: String, srDamagedRuns :: [Int]} deriving (Show)
 
@@ -71,7 +71,7 @@ foldedArrangements dupeCount sr@(SpringRow conditionsStr damagedRuns)
     = case after of
         [] -> naiveFoldedArrangements dupeCount (SpringRow conditionsStr damagedRuns)
         _ -> case before of
-            [] -> map concat $ sequence $ (replicate (dupeCount-1) (arrangements (SpringRow (conditionsStr ++ "?") damagedRuns)) ++ [arrangements (SpringRow conditionsStr damagedRuns)])
+            [] -> naiveFoldedArrangements dupeCount (SpringRow conditionsStr damagedRuns) -- map concat $ sequence $ (replicate (dupeCount-1) (arrangements (SpringRow (conditionsStr ++ "?") damagedRuns)) ++ [arrangements (SpringRow conditionsStr damagedRuns)])
             _ -> concat $ do
                     numOfInitRuns <- [0 .. (length damagedRuns)]
                     let (initRuns,finalRuns) = splitAt numOfInitRuns damagedRuns
@@ -88,7 +88,7 @@ numOfFoldedArrangements dupeCount sr@(SpringRow conditionsStr damagedRuns)
     = case after of
         [] -> length $ naiveFoldedArrangements dupeCount (SpringRow conditionsStr damagedRuns)
         _ -> case before of 
-            [] -> (*dupeCount) $ length (arrangements (SpringRow (conditionsStr ++ "?") damagedRuns))
+            [] -> length $ naiveFoldedArrangements dupeCount (SpringRow conditionsStr damagedRuns) -- (*dupeCount) $ length (arrangements (SpringRow (conditionsStr ++ "?") damagedRuns))
             _ -> sum $ do
                 numOfInitRuns <- [0 .. (length damagedRuns)]
                 let (initRuns,finalRuns) = splitAt numOfInitRuns damagedRuns
@@ -103,14 +103,14 @@ numOfFoldedArrangements dupeCount sr@(SpringRow conditionsStr damagedRuns)
 naiveFoldedArrangements dupeCount (SpringRow conditionsStr damagedRuns) = arrangements (SpringRow (intercalate "?" $ replicate dupeCount conditionsStr) (concat $ replicate dupeCount damagedRuns))
 
 day12part1 = do
-  contents <- readFile "day12 (example).csv"
+  contents <- readFile "day12 (data).csv"
   print . sum . map length . map arrangements . map readSpringRow . lines $ contents
+
+day12part2 = do
+  contents <- readFile "day12 (data).csv"
+  print . sum . map (numOfFoldedArrangements 5) . map readSpringRow . lines $ contents
 
 -- day12part2 = do
   -- contents <- readFile "day12 (example).csv"
-  -- mapM_ print . map (numOfFoldedArrangements 5) . map readSpringRow . lines $ contents
-
-day12part2 = do
-  contents <- readFile "day12 (example).csv"
   
-  mapM_ print . (foldedArrangements 5) . (!! 1) . map readSpringRow . lines $ contents
+  -- mapM_ print . (foldedArrangements 5) . (!! 1) . map readSpringRow . lines $ contents
