@@ -109,7 +109,7 @@ day12part1 = do
 
 day12part2 = do
   contents <- readFile "day12 (data).csv"
-  let numsOfArrangements = map (numOfFoldedArrangements 5) . take 325 . drop 486 . map readSpringRow . lines $ contents
+  let numsOfArrangements = map (numOfFoldedArrangements 5) . take (325 - (566-486)) . drop (486 + (566-486)) . map readSpringRow . lines $ contents
   let numsOfArrangementsInParallel = numsOfArrangements `using` parList rdeepseq
   mapM_ print numsOfArrangementsInParallel
 
@@ -119,6 +119,8 @@ day12part2 = do
   -- mapM_ print . (foldedArrangements 5) . (!! 1) . map readSpringRow . lines $ contents
   
   
+-- The following is all of the solutions for "day12 (data).csv" on part 2 that I managed to output after running for a day. I was searching for a while at the edges of ranges marked " MISSING ONE  <------------" in both directions without turning anything new up.
+-- 
 -- 6444
 -- 1
 -- 1024
@@ -606,9 +608,208 @@ day12part2 = do
 -- 125951
 -- 7952167118
 -- 5741
-
--- ...
-
+-- 33822194440
+-- 512
+-- 243
+-- 1024
+-- 15717424
+-- 32
+-- 2059054
+-- 393216
+-- 32
+-- 24054048
+-- 6480
+-- 1
+-- 450464
+-- 32
+-- 165888
+-- 162
+-- 7203
+-- 655
+-- 32
+-- 1
+-- 243
+-- 506250
+-- 1
+-- 16
+-- 243
+-- 26244
+-- 344207360
+-- 32
+-- 16807
+-- 1225964
+-- 243
+-- 512
+-- 162
+-- 1077074
+-- 32
+-- 32
+-- 1750329
+-- 206610467840
+-- 122944
+-- 34011999
+-- 11919
+-- 1024
+-- 2592
+-- 12451597
+-- 243
+-- 243
+-- 5184
+-- 124416
+-- 2624
+-- 243
+-- 155117520
+-- 16807
+-- 162
+-- 14901114
+-- 9066176
+-- 512
+-- MISSING ONE  <------------
+-- 16
+-- 16623378
+-- 262144
+-- 1
+-- 853426
+-- 512
+-- 1
+-- 1024
+-- 1250
+-- 2333772
+-- 3888
+-- 512
+-- 1024
+-- 16
+-- 625
+-- 2500
+-- 3769184
+-- 5184
+-- 3125
+-- 1
+-- 2592
+-- 95356783
+-- 10125
+-- 1
+-- 32
+-- 13572
+-- 146410
+-- 512
+-- 32
+-- 1
+-- 1991424
+-- 657
+-- 3888
+-- 46620
+-- 41472
+-- 117129
+-- 72603521
+-- 1024
+-- 1
+-- 6377292
+-- 839808
+-- 16807
+-- 1
+-- 9604
+-- 1
+-- 1
+-- 1
+-- 85306
+-- 12005
+-- 6480
+-- 12320
+-- 512
+-- 518400000
+-- 16807
+-- 5184
+-- 2442096
+-- 5184
+-- 2500
+-- 39609
+-- 240800
+-- 58564
+-- 8660
+-- 512
+-- 1048576
+-- 14763
+-- 32
+-- 243
+-- 162
+-- 1
+-- 126867
+-- 32
+-- 32
+-- 253125
+-- 3513840
+-- 16
+-- 12960000
+-- 1875
+-- 24576
+-- 256
+-- 155117520
+-- 1890592
+-- 3363
+-- 1024
+-- 243
+-- 162
+-- 14406
+-- 297874
+-- 1
+-- 87846
+-- 768
+-- 162
+-- 199927
+-- 124416
+-- 1
+-- 32
+-- 1
+-- 1476
+-- 768
+-- 512
+-- 20480
+-- 45018750
+-- 3200000
+-- 1024
+-- 162
+-- 626
+-- 1024
+-- 84408
+-- 5184
+-- 2500
+-- 36760
+-- 16
+-- 7776
+-- 12005
+-- 60000
+-- 513
+-- 32
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
+-- MISSING ONE  <------------
 -- 362
 -- 544
 -- 32805
