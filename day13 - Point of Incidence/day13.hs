@@ -73,7 +73,7 @@ allPatternDirs (RockPatternString s) = (rockPatternDn, rockPatternUp, rockPatter
   -- mapM_ printAllDirs . map allPatternDirs . readRockPatternStrings $ contents
 
 findHorizontalReflectionIndices :: RockPatternString -> [Int]
-findHorizontalReflectionIndices (RockPatternString s) = findIndices (==0) $ allEvenXorsBetween rowLength rowAmount (rockPatternInt rockPatternDn) (rockPatternInt rockPatternUp)
+findHorizontalReflectionIndices (RockPatternString s) = findIndices (==0) $ allXorsBetween rowLength rowAmount (rockPatternInt rockPatternDn) (rockPatternInt rockPatternUp)
   where rockPatternDn = readRockPattern . id                                    $ s
         rockPatternUp = readRockPattern . unlines . reverse             . lines $ s
         
@@ -81,7 +81,7 @@ findHorizontalReflectionIndices (RockPatternString s) = findIndices (==0) $ allE
         rowLength = rockPatternRowLength rockPatternDn
 
 findVerticalReflectionIndices :: RockPatternString -> [Int]
-findVerticalReflectionIndices (RockPatternString s) = findIndices (==0) $ allEvenXorsBetween rowLength rowAmount (rockPatternInt rockPatternLt) (rockPatternInt rockPatternRt)
+findVerticalReflectionIndices (RockPatternString s) = findIndices (==0) $ allXorsBetween rowLength rowAmount (rockPatternInt rockPatternLt) (rockPatternInt rockPatternRt)
   where rockPatternLt = readRockPattern . unlines .           transpose . lines $ s
         rockPatternRt = readRockPattern . unlines . reverse . transpose . lines $ s
         
@@ -96,16 +96,76 @@ allXorsBetween rowLength numOfRows rockInt1 rockInt2 = left ++ right
   where left  = [(chop $ rockInt1) `xor` shiftR rockInt2 delta | i <- [(numOfRows-2), (numOfRows-3) .. 1], let delta = i*rowLength, let chop = truncateBits ((numOfRows - i)*rowLength)]
         right = [shiftR rockInt1 delta `xor` (chop $ rockInt2) | i <- [0..(numOfRows-2)],                  let delta = i*rowLength, let chop = truncateBits ((numOfRows - i)*rowLength)]
 
-allEvenXorsBetween :: Int -> Int -> Int -> Int -> [Int]
-allEvenXorsBetween rowLength numOfRows rockInt1 rockInt2 = left ++ right
-  where left  = [(chop $ rockInt1) `xor` shiftR rockInt2 delta | i <- [(numOfRows-2), (numOfRows-3) .. 1], let height = (numOfRows - i), height `mod` 2 == 0, let delta = i*rowLength, let chop = truncateBits (height*rowLength)]
-        right = [shiftR rockInt1 delta `xor` (chop $ rockInt2) | i <- [0..(numOfRows-2)],                  let height = (numOfRows - i), height `mod` 2 == 0, let delta = i*rowLength, let chop = truncateBits (height*rowLength)]
+-- allEvenXorsBetween :: Int -> Int -> Int -> Int -> [Int]
+-- allEvenXorsBetween rowLength numOfRows rockInt1 rockInt2 = left ++ right
+  -- where left  = [(chop $ rockInt1) `xor` shiftR rockInt2 delta | i <- [(numOfRows-2), (numOfRows-3) .. 1], let height = (numOfRows - i), height `mod` 2 == 0, let delta = i*rowLength, let chop = truncateBits (height*rowLength)]
+        -- right = [shiftR rockInt1 delta `xor` (chop $ rockInt2) | i <- [0..(numOfRows-2)],                  let height = (numOfRows - i), height `mod` 2 == 0, let delta = i*rowLength, let chop = truncateBits (height*rowLength)]
 
 toBin :: Int -> Int -> String
 toBin bitCount n = [if n `testBit` i then '#' else '.' | i <- [0..(bitCount-1)]]
 
 day13part1 = do
   contents <- readFile "day13 (example).csv"
-  let colSum = sum . map sum $ map (map (+1)) . map findVerticalReflectionIndices . readRockPatternStrings $ contents
-  let rowSum = sum . map sum $ map (map (+1)) . map findHorizontalReflectionIndices . readRockPatternStrings $ contents
-  print (100 * rowSum + colSum)
+  let colSum = map findVerticalReflectionIndices . readRockPatternStrings $ contents
+  let rowSum = map findHorizontalReflectionIndices . readRockPatternStrings $ contents
+  print (rowSum, colSum)
+
+-- Given allXorsBetween gives index for a reflection about the line between rows or on a row starting between the first two rows and ending between the last two rows, we should get the following:
+-- testStr1 = unlines [".  #  #  .  .  #  #  .  .",
+--                                                  0
+--                     ".  #  .  #  #  .  #  .  .", 1
+--                                                  2
+--                     "#  .  .  .  .  .  .  #  .", 3
+--                                                  4 <---- Reflection
+--                     "#  .  .  .  .  .  .  #  .", 5
+--                                                  6
+--                     ".  #  .  #  #  .  #  .  .", 7
+--                                                  8
+--                     ".  #  #  .  .  #  #  .  .", 9
+--                                                  10
+--                     ".  #  .  #  #  .  #  .  ."] 
+--                         1  3  5  7  9  11 13     
+--                       0  2  4  6  8  10 12 14    
+--                                ^                    
+--                                |                    
+--                                |                    
+--                                |                    
+--                                |                    
+--                                Reflection           
+-- 
+--  ([[4]],[[6]])
+-- 
+-- The following code does not match this expectation:
+--  ([[5,10]],[[7]])
+--
+-- And the other inputs below also come out wrong
+--
+tests = do
+  let rockPatternStrings = readRockPatternStrings (intercalate "\n\n" [testStr1,testStr2,testStr3])
+  let colSum = map (map (+1)) . map findVerticalReflectionIndices $ rockPatternStrings
+  let rowSum = map (map (+1)) . map findHorizontalReflectionIndices $ rockPatternStrings
+  print (rowSum, colSum)
+
+testStr1 = unlines [".##..##..",
+                    ".#.##.#..",
+                    "#......#.",
+                    "#......#.",
+                    ".#.##.#..",
+                    ".##..##..",
+                    ".#.##.#.."]
+
+testStr2 = unlines ["..##..##..",
+                    "..#.##.#..",
+                    ".#......#.",
+                    ".#......#.",
+                    "..#.##.#..",
+                    "..##..##..",
+                    "..#.##.#.."]
+
+testStr3 = unlines ["...##..##..",
+                    "...#.##.#..",
+                    "..#......#.",
+                    "..#......#.",
+                    "...#.##.#..",
+                    "...##..##..",
+                    "...#.##.#.."]
