@@ -41,16 +41,18 @@ import Data.Bits
 main = day14part2
 
 readColumns :: String -> [String]
-readColumns = transpose . lines
+readColumns = lines
 
 roll = map (intercalate "#" . map ((\(rocks,spaces) -> rocks ++ spaces) . partition (== 'O'))) . map (splitOn "#")
-load = sum . map sum . map (zipWith (\i c -> i * if c == 'O' then 1 else 0) [1..]) . map reverse
-rotateRocks = transpose . reverse
+load = sum . map sum . map (zipWith (\i c -> i * if c == 'O' then 1 else 0) [1..])
+rotateCW90     = transpose . reverse
+rotateAntiCW90 = reverse . transpose
+rotate180      = map reverse . reverse
 
 day14part1 = do
   contents <- readFile "day14 (data).csv"
   let cols = readColumns $ contents
-  print . load . roll $ cols
+  print . load . rotate180 . roll . rotateAntiCW90 $ cols
 
 runAllOn :: [a -> a] -> a -> a
 runAllOn = flip (foldl' (flip ($!)))
@@ -58,11 +60,8 @@ runAllOn = flip (foldl' (flip ($!)))
 runAllOnAndList :: [a -> a] -> a -> [a]
 runAllOnAndList = flip (scanl' (flip ($!)))
 
+-- I should make this detect when the load value repeats and then calculate where it would land at a billionth spin cycle
 day14part2 = do
-  contents <- readFile "day14 (example).csv"
+  contents <- readFile "day14 (data).csv"
   let cols = readColumns $ contents
-  mapM_ putStrLn cols
-  putStrLn ""
-  -- print . load . foldr (flip (.)) id (intersperse rotateRocks (concat $ replicate 1000000000 (replicate 4 roll))) $ cols
-  -- mapM_ ((>> putStrLn "") . mapM_ putStrLn) $ runAllOnAndList (intersperse rotateRocks (concat $ replicate (8*202) (replicate 4 roll))) (rotateRocks . rotateRocks . rotateRocks $ cols)
-  mapM_ print . map load $ runAllOnAndList (intersperse rotateRocks (concat $ replicate (8*202) (replicate 4 roll))) (rotateRocks . rotateRocks . rotateRocks $ cols)
+  mapM_ print . map load . {-map head . chunksOf 8 . drop 5-} $ runAllOnAndList (intersperse rotateCW90 (concat $ replicate 1000000000 (replicate 4 roll))) (rotateAntiCW90 $ cols)
