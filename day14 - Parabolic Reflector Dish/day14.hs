@@ -59,7 +59,10 @@ runAllOnAndList :: [a -> a] -> a -> [a]
 runAllOnAndList = flip (scanl' (flip ($!)))
 
 day14part2 = do
-  contents <- readFile "day14 (data).csv"
+  contents <- readFile "day14 (example).csv"
   let cols = readColumns $ contents
+  mapM_ putStrLn cols
+  putStrLn ""
   -- print . load . foldr (flip (.)) id (intersperse rotateRocks (concat $ replicate 1000000000 (replicate 4 roll))) $ cols
-  mapM_ print . map load $ runAllOnAndList (map runAllOn (chunksOf 8 $ (intersperse rotateRocks (concat $ replicate 202 (replicate 4 roll))))) cols
+  -- mapM_ ((>> putStrLn "") . mapM_ putStrLn) $ runAllOnAndList (intersperse rotateRocks (concat $ replicate (8*202) (replicate 4 roll))) (rotateRocks . rotateRocks . rotateRocks $ cols)
+  mapM_ print . map load $ runAllOnAndList (intersperse rotateRocks (concat $ replicate (8*202) (replicate 4 roll))) (rotateRocks . rotateRocks . rotateRocks $ cols)
