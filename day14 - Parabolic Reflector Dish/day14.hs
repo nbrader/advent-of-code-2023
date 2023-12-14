@@ -24,7 +24,7 @@
 -------------
 -- Imports --
 -------------
-import Data.List (foldl', nub, sort, transpose, isPrefixOf, findIndex, findIndices, intercalate, reverse, partition, intersperse)
+import Data.List (foldl', nub, sort, transpose, isPrefixOf, findIndex, findIndices, intercalate, reverse, partition, intersperse, scanl')
 import Data.List.Split (splitOn, chunksOf)
 import qualified Data.Map as M
 import Data.Maybe (fromJust, maybeToList, catMaybes)
@@ -45,15 +45,21 @@ readColumns = transpose . lines
 
 roll = map (intercalate "#" . map ((\(rocks,spaces) -> rocks ++ spaces) . partition (== 'O'))) . map (splitOn "#")
 load = sum . map sum . map (zipWith (\i c -> i * if c == 'O' then 1 else 0) [1..]) . map reverse
-rotateRocks = map reverse . transpose
+rotateRocks = transpose . reverse
 
 day14part1 = do
   contents <- readFile "day14 (data).csv"
   let cols = readColumns $ contents
   print . load . roll $ cols
 
+runAllOn :: [a -> a] -> a -> a
+runAllOn = flip (foldl' (flip ($!)))
+
+runAllOnAndList :: [a -> a] -> a -> [a]
+runAllOnAndList = flip (scanl' (flip ($!)))
+
 day14part2 = do
-  contents <- readFile "day14 (example).csv"
+  contents <- readFile "day14 (data).csv"
   let cols = readColumns $ contents
   -- print . load . foldr (flip (.)) id (intersperse rotateRocks (concat $ replicate 1000000000 (replicate 4 roll))) $ cols
-  print . load $ foldl' (flip ($!)) cols (intersperse rotateRocks (concat $ replicate 1000000000 (replicate 4 roll)))
+  mapM_ print . map load $ runAllOnAndList (map runAllOn (chunksOf 8 $ (intersperse rotateRocks (concat $ replicate 202 (replicate 4 roll))))) cols
