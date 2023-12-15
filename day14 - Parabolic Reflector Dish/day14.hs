@@ -33,6 +33,7 @@ import Control.Monad (guard)
 import Debug.Trace (trace)
 import Control.Parallel.Strategies
 import Data.Bits
+import qualified Data.IntSet as S
 
 
 -------------
@@ -60,8 +61,23 @@ runAllOn = flip (foldl' (flip ($!)))
 runAllOnAndList :: [a -> a] -> a -> [a]
 runAllOnAndList = flip (scanl' (flip ($!)))
 
+takeWhileInclusive :: (a -> Bool) -> [a] -> [a]
+takeWhileInclusive _ [] = []
+takeWhileInclusive p (x:xs) = x : if p x then takeWhileInclusive p xs
+                                         else []
+
+getCycle :: [Int] -> (Int,Int)
+getCycle = go mempty mempty Nothing
+  where go :: S.IntSet -> [Int] -> [Int] -> Maybe [Int] -> (Int,Int)
+        go visitedSet visitedList Nothing (x:xs)
+            | x `member` visitedSet = go takeWhileInclusive (/= x) visitedList
+            | otherwise = 
+        go visitedSet visitedList maybeUnverifiedCycleElems (x:xs)
+            | x `member` visitedSet = go takeWhileInclusive (/= x) visitedList
+            | otherwise = 
+
 -- I should make this detect when the load value repeats and then calculate where it would land at a billionth spin cycle
 day14part2 = do
-  contents <- readFile "day14 (data).csv"
+  contents <- readFile "day14 (example).csv"
   let cols = readColumns $ contents
-  mapM_ print . map load . {-map head . chunksOf 8 . drop 5-} $ runAllOnAndList (intersperse rotateCW90 (concat $ replicate 1000000000 (replicate 4 roll))) (rotateAntiCW90 $ cols)
+  mapM_ print . map load {-. map head . chunksOf 8 . drop 5-} $ runAllOnAndList (intersperse rotateCW90 (concat $ replicate 1 (replicate 4 roll))) (rotateAntiCW90 $ cols)
