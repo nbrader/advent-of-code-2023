@@ -15,10 +15,10 @@
 -- Output --
 ------------
 -- *Main> day14part1
--- 
+-- 109466
 
 -- *Main> day14part2
--- 
+-- 94585
 
 
 -------------
@@ -45,7 +45,7 @@ readColumns :: String -> [String]
 readColumns = lines
 
 roll = map (intercalate "#" . map ((\(rocks,spaces) -> rocks ++ spaces) . partition (== 'O'))) . map (splitOn "#")
-load = sum . map sum . map (zipWith (\i c -> i * if c == 'O' then 1 else 0) [1..])
+load = sum . map sum . map (zipWith (\i c -> i * if c == 'O' then 1 else 0) [1..]) . rotate180
 rotateCW90     = transpose . reverse
 rotateAntiCW90 = reverse . transpose
 rotate180      = map reverse . reverse
@@ -53,13 +53,16 @@ rotate180      = map reverse . reverse
 day14part1 = do
   contents <- readFile "day14 (data).csv"
   let cols = readColumns $ contents
-  print . load . rotate180 . roll . rotateAntiCW90 $ cols
+  print . load . roll $ rotateAntiCW90 cols
 
-runAllOn :: [a -> a] -> a -> a
-runAllOn = flip (foldl' (flip ($!)))
+runAllOn' :: [a -> a] -> a -> a
+runAllOn' = flip (foldl' (flip ($!)))
+
+runAllOnAndList' :: [a -> a] -> a -> [a]
+runAllOnAndList' = flip (scanl' (flip ($!)))
 
 runAllOnAndList :: [a -> a] -> a -> [a]
-runAllOnAndList = flip (scanl' (flip ($!)))
+runAllOnAndList = flip (scanl (flip ($)))
 
 takeWhileInclusive :: (a -> Bool) -> [a] -> [a]
 takeWhileInclusive _ [] = []
@@ -70,12 +73,18 @@ getCycle :: [Int] -> ([Int], Int)
 getCycle = go mempty mempty 0
   where go :: S.IntSet -> [Int] -> Int -> [Int] -> ([Int], Int)
         go visitedSet visitedList cycleStart (x:xs) 
-            | x `S.member` visitedSet && possibleCycle `isPrefixOf` (x:xs) && length possibleCycle `div` 8 == 0 = (possibleCycle, cycleStart - length possibleCycle)
+            | x `S.member` visitedSet && possibleCycle `isPrefixOf` (x:xs) && length possibleCycle `mod` 8 == 0 = (possibleCycle, cycleStart - length possibleCycle)
             | otherwise = go (S.insert x visitedSet) (x:visitedList) (cycleStart+1) xs
           where possibleCycle = reverse $ takeWhileInclusive (/= x) visitedList
 
+getValueAssumingCycle :: Int -> ([Int], Int) -> Int
+getValueAssumingCycle i (cycleList, cycleStart) = cycleList !! indexIntoCycleList
+  where cycleLength = length cycleList
+        offset = (-cycleStart) `mod` cycleLength
+        indexIntoCycleList = (i + offset) `mod` cycleLength
+
 -- I should make this detect when the load value repeats and then calculate where it would land at a billionth spin cycle
 day14part2 = do
-  contents <- readFile "day14 (example).csv"
+  contents <- readFile "day14 (data).csv"
   let cols = readColumns $ contents
-  mapM_ print . getCycle . map load {-. map head . chunksOf 8 . drop 5-} $ runAllOnAndList (intersperse rotateCW90 (concat $ replicate 100000 (replicate 4 roll))) (rotateAntiCW90 $ cols)
+  print . getValueAssumingCycle 1000000000 . getCycle . map load $ runAllOnAndList (intersperse rotateCW90 (repeat roll)) (rotateAntiCW90 cols)
