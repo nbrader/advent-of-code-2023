@@ -30,7 +30,8 @@ import Data.List (
 import Data.List.Split (splitOn, chunksOf)
 import qualified Data.Map as M
 import Data.Maybe (fromJust, maybeToList, catMaybes)
-import Linear
+import Linear ((*^))
+import qualified Linear
 import Linear.V2
 import Control.Monad (guard)
 import Debug.Trace (trace)
@@ -56,10 +57,11 @@ rt = V2   1    0
 
 
 data World = World {
+    worldRows :: [String],
     worldObjs :: M.Map (V2 Int) Char,
     worldDims :: V2 Int } deriving (Show, Eq)
 
-emptyWorld dims = World mempty dims
+emptyWorld strs dims = World strs mempty dims
 
 
 data Beam = Beam {
@@ -71,9 +73,9 @@ inBounds :: V2 Int -> V2 Int -> Bool
 inBounds (V2 width height) (V2 x y) = x >= 0 && y >= 0 && x < width && y < height
 
 getNextLockDirsFromHitLocDir :: World -> LocDir -> [LocDir]
-getNextLockDirsFromHitLocDir world@(World objs dims) (LocDir loc dir)
+getNextLockDirsFromHitLocDir world@(World rows objs dims) (LocDir loc dir)
     = let c = M.lookup loc objs
-      in filter (inBounds dims) $ case c of
+      in filter (inBounds dims . getLoc) $ case c of
             Just '|'  ->      if dir == up then [upLocDir]
                          else if dir == dn then [dnLocDir]
                          else                   [upLocDir, dnLocDir]
@@ -96,25 +98,57 @@ getNextLockDirsFromHitLocDir world@(World objs dims) (LocDir loc dir)
         ltLocDir = LocDir (loc + lt) lt
         rtLocDir = LocDir (loc + rt) rt
 
-getNextHit :: World -> LocDir -> LocDir
-getNextHit world (LocDir loc dir) = -- To Do
+getFullWorldSliceInDirOrder :: World -> LocDir -> String
+getFullWorldSliceInDirOrder world (LocDir (V2 x y) dir)
+    | dir == up = reverse . (!! x) . transpose $ rows
+    | dir == dn =           (!! x) . transpose $ rows
+    | dir == lt = reverse . (!! y)             $ rows
+    | dir == rt =           (!! y)             $ rows
+    | otherwise = error "Invalid Dir"
+  where rows = worldRows world
 
-progressBeamToNextHit :: World -> Beam -> Beam
-progressBeamToNextHit world@(World objs dims) (Beam locDirList@((LocDir loc dir):_) locDirSet)
-    = Beam (newLocDirs ++ locDirList) (S.union (S.fromList newLocDirs) locDirSet)
-  where nextLocDirs = getNextLockDirsFromHitLocDir world (LocDir loc dir)
-        
-  
-  
-                        ltBeam = getFullResultingBeam world (Beam (ltLocDir:locDirList) (S.insert ltLocDir locDirSet))
-                        rtBeam = getFullResultingBeam world (Beam (rtLocDir:locDirList) (S.insert rtLocDir locDirSet))
-                    in beamLocDirList ltBeam ++ beamLocDirList rtBeam -- To Do
+getForwardWorldSliceInDirOrder :: World -> LocDir -> String
+getForwardWorldSliceInDirOrder world (LocDir (V2 x y) dir)
+    | dir == dn = drop (y+1) fullSlice
+    | dir == rt = drop (x+1) fullSlice
+    | dir == up = drop (height-y) fullSlice
+    | dir == lt = drop (width -x) fullSlice
+    | otherwise = error "Invalid Dir"
+  where fullSlice = getFullWorldSliceInDirOrder world (LocDir (V2 x y) dir)
+        (V2 width height) = worldDims world
+
+getUpToNextHit :: World -> LocDir -> ([LocDir], Maybe Char)
+getUpToNextHit world locDir@(LocDir loc dir)
+    | hitsObjBeforeWall = (forwardWorldSliceLocDirs, Just hit)
+    | otherwise         = (forwardWorldSliceLocDirs, Nothing)
+  where forwardWorldSlice = getForwardWorldSliceInDirOrder world locDir
+        hitsObjBeforeWall = any (`elem` "|-/\\") forwardWorldSlice
+        (before,hit:after) = break (`elem` "|-/\\") forwardWorldSlice
+        sliceUpToHitLength
+            | hitsObjBeforeWall = length before + 1
+            | otherwise         = length forwardWorldSlice
+        forwardWorldSliceLocDirs = [LocDir (loc + i *^ dir) dir | i <- [sliceUpToHitLength..1]]
 
 getFullResultingBeam :: World -> Beam -> Beam
 getFullResultingBeam world initBeam = fst $ until end (progress world) (initBeam, emptyBeam)
   where end      (beam, prevBeam) = beam == prevBeam
         progress w (beam, prevBeam) = (progressBeamToNextHit w beam, beam)
-        
+
+combineBeams :: World -> [Beam] -> Beam
+combineBeams world beams = Beam (concat (map beamLocDirList beams)) (S.unions (map beamLocDirSet beams))
+
+progressBeamToNextHit :: World -> Beam -> Beam
+progressBeamToNextHit world@(World rows objs dims) (Beam locDirList@((LocDir loc dir):_) locDirSet)
+    = combineBeams world allBeams
+  where nextLockDirsFromHitLocDir = getNextLockDirsFromHitLocDir world (LocDir loc dir)
+        slicesUpToHits = map (getUpToNextHit world) nextLockDirsFromHitLocDir
+        allBeams = map (\(newLocDirs, maybeHitChar) -> let newBeam = Beam (newLocDirs ++ locDirList) (S.union (S.fromList newLocDirs) locDirSet)
+                                                       in case maybeHitChar of
+                                                            Nothing      -> newBeam
+                                                            Just hitChar -> let hitBefore = head newLocDirs `S.member` locDirSet
+                                                                            in if hitBefore
+                                                                                then newBeam -- Include already visited last LocDir not because it's necessary but doesn't hurt
+                                                                                else getFullResultingBeam world newBeam) slicesUpToHits
 
 readChar2Ds :: (Num a, Enum a) => [Char] -> [(V2 a, Char)]
 readChar2Ds inStr = do
@@ -125,16 +159,16 @@ readChar2Ds inStr = do
     return (V2 x y, char)
 
 readWorld :: String -> World
-readWorld inStr = foldl' updateWorld (emptyWorld dims) char2Ds
+readWorld inStr = foldl' updateWorld (World rows mempty dims) char2Ds
   where rows = lines inStr
         height = length rows
         width = length $ head rows
         dims = V2 width height
         char2Ds = readChar2Ds inStr
-        updateWorld (World objs dims) (loc, char)
+        updateWorld (World rs objs dims) (loc, char)
             = case char of
-                '.' -> World objs dims
-                c   -> World (M.insert loc c objs) dims
+                '.' -> World rs objs dims
+                c   -> World rs (M.insert loc c objs) dims
 
 day16part1 = do
     contents <- readFile "day16 (example).csv"
