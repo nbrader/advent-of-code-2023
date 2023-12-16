@@ -89,8 +89,8 @@ readStart inStr (V2 width height) = (V2 sX sY, char)
         
         char = charFromConnectedDirs connUp connDown connLeft connRight
 
-readChar2D :: String -> [(V2 Int, Char)]
-readChar2D inStr = do
+readChar2Ds :: String -> [(V2 Int, Char)]
+readChar2Ds inStr = do
     let rows = lines inStr
     (y,row)  <- zip [0..] rows
     (x,char) <- zip [0..] row
@@ -98,7 +98,7 @@ readChar2D inStr = do
     return (V2 x y, char)
     
 readPosToLabelMap :: String -> M.Map (V2 Int) Char
-readPosToLabelMap = M.fromList . readChar2D
+readPosToLabelMap = M.fromList . readChar2Ds
 
 readGraph :: String -> Graph
 readGraph inStr = Graph edges startPos bounds
