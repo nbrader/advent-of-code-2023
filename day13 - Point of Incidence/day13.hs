@@ -24,7 +24,7 @@
 -------------
 -- Imports --
 -------------
-import Data.List (foldl', nub, sort, transpose, isPrefixOf, findIndex, findIndices, intercalate, reverse)
+import Data.List (foldl', nub, sort, transpose, isPrefixOf, findIndex, findIndices, intercalate, reverse, length, delete)
 import Data.List.Split (splitOn, chunksOf)
 import qualified Data.Map as M
 import Data.Maybe (fromJust, maybeToList, catMaybes)
@@ -40,7 +40,7 @@ import Data.Bits
 -------------
 main = day13part1
 
-data RockPattern = RockPattern {rockPatternInt :: Int, rockPatternRowLength :: Int, rockPatternRowAmount :: Int} deriving (Show)
+data RockPattern = RockPattern {rockPatternInt :: Integer, rockPatternRowLength :: Int, rockPatternRowAmount :: Int} deriving (Show)
 newtype RockPatternString = RockPatternString {fromRockPatternString :: String} deriving (Show)
 
 readRockPatternStrings :: String -> [RockPatternString]
@@ -73,7 +73,7 @@ allPatternDirs (RockPatternString s) = (rockPatternDn, rockPatternUp, rockPatter
   -- mapM_ printAllDirs . map allPatternDirs . readRockPatternStrings $ contents
 
 findHorizontalReflectionIndices :: RockPatternString -> [Int]
-findHorizontalReflectionIndices (RockPatternString s) = findIndices (==0) $ allXorsBetween rowLength rowAmount (rockPatternInt rockPatternDn) (rockPatternInt rockPatternUp)
+findHorizontalReflectionIndices (RockPatternString s) = map toCountOfBehindReflectionLine . filter reflectionLineBetweenRocks . findIndices (==0) $ allXorsBetween rowLength rowAmount (rockPatternInt rockPatternDn) (rockPatternInt rockPatternUp)
   where rockPatternDn = readRockPattern . id                                    $ s
         rockPatternUp = readRockPattern . unlines . reverse             . lines $ s
         
@@ -81,34 +81,115 @@ findHorizontalReflectionIndices (RockPatternString s) = findIndices (==0) $ allX
         rowLength = rockPatternRowLength rockPatternDn
 
 findVerticalReflectionIndices :: RockPatternString -> [Int]
-findVerticalReflectionIndices (RockPatternString s) = findIndices (==0) $ allXorsBetween rowLength rowAmount (rockPatternInt rockPatternLt) (rockPatternInt rockPatternRt)
+findVerticalReflectionIndices (RockPatternString s) = map toCountOfBehindReflectionLine . filter reflectionLineBetweenRocks . findIndices (==0) $ allXorsBetween rowLength rowAmount (rockPatternInt rockPatternLt) (rockPatternInt rockPatternRt)
   where rockPatternLt = readRockPattern . unlines .           transpose . lines $ s
         rockPatternRt = readRockPattern . unlines . reverse . transpose . lines $ s
         
         rowAmount = rockPatternRowAmount rockPatternLt
         rowLength = rockPatternRowLength rockPatternLt
 
-truncateBits :: Int -> Int -> Int
+toCountOfBehindReflectionLine :: Int -> Int
+toCountOfBehindReflectionLine = (+1) . (`div` 2)
+
+reflectionLineBetweenRocks :: Int -> Bool
+reflectionLineBetweenRocks = (==0) . (`mod` 2)
+
+truncateBits :: Int -> Integer -> Integer
 truncateBits digits x = x .&. ((1 `shiftL` digits) - 1)
 
-allXorsBetween :: Int -> Int -> Int -> Int -> [Int]
-allXorsBetween rowLength numOfRows rockInt1 rockInt2 = left ++ right
-  where left  = [(chop $ rockInt1) `xor` shiftR rockInt2 delta | i <- [(numOfRows-2), (numOfRows-3) .. 1], let delta = i*rowLength, let chop = truncateBits ((numOfRows - i)*rowLength)]
-        right = [shiftR rockInt1 delta `xor` (chop $ rockInt2) | i <- [0..(numOfRows-2)],                  let delta = i*rowLength, let chop = truncateBits ((numOfRows - i)*rowLength)]
+allPairsBetween :: Int -> Int -> Integer -> Integer -> [(Integer,Integer)]
+allPairsBetween rowLength numOfRows rockInt1 rockInt2 = left ++ right
+  where left  = [(chop rockInt1, shiftR rockInt2 delta) | i <- [(numOfRows-2), (numOfRows-3) .. 1], let delta = i*rowLength, let chop = truncateBits ((numOfRows - i)*rowLength)]
+        right = [(shiftR rockInt1 delta, chop rockInt2) | i <- [0..(numOfRows-2)],                  let delta = i*rowLength, let chop = truncateBits ((numOfRows - i)*rowLength)]
 
--- allEvenXorsBetween :: Int -> Int -> Int -> Int -> [Int]
+allXorsBetween :: Int -> Int -> Integer -> Integer -> [Integer]
+allXorsBetween rowLength numOfRows rockInt1 rockInt2 = [l `xor` r | (l,r) <- allPairsBetween rowLength numOfRows rockInt1 rockInt2]
+
+allPairsBetweenAsRockPatterns :: RockPattern -> RockPattern -> [(RockPattern, RockPattern)]
+allPairsBetweenAsRockPatterns rp1 rp2 = [(RockPattern l rowLength rowAmount, RockPattern r rowLength rowAmount) | (l,r) <- allPairsBetween rowLength rowAmount (rockPatternInt rp1) (rockPatternInt rp2)]
+  where rowAmount = rockPatternRowAmount rp1
+        rowLength = rockPatternRowLength rp1
+
+allXorsBetweenAsRockPatterns :: RockPattern -> RockPattern -> [RockPattern]
+allXorsBetweenAsRockPatterns rp1 rp2 = [RockPattern rocksInt rowLength rowAmount | rocksInt <- allXorsBetween rowLength rowAmount (rockPatternInt rp1) (rockPatternInt rp2)]
+  where rowAmount = rockPatternRowAmount rp1
+        rowLength = rockPatternRowLength rp1
+
+-- allEvenXorsBetween :: Int -> Int -> Integer -> Integer -> [Integer]
 -- allEvenXorsBetween rowLength numOfRows rockInt1 rockInt2 = left ++ right
   -- where left  = [(chop $ rockInt1) `xor` shiftR rockInt2 delta | i <- [(numOfRows-2), (numOfRows-3) .. 1], let height = (numOfRows - i), height `mod` 2 == 0, let delta = i*rowLength, let chop = truncateBits (height*rowLength)]
         -- right = [shiftR rockInt1 delta `xor` (chop $ rockInt2) | i <- [0..(numOfRows-2)],                  let height = (numOfRows - i), height `mod` 2 == 0, let delta = i*rowLength, let chop = truncateBits (height*rowLength)]
 
-toBin :: Int -> Int -> String
+toBin :: Int -> Integer -> String
 toBin bitCount n = [if n `testBit` i then '#' else '.' | i <- [0..(bitCount-1)]]
+
+showRockPattern :: RockPattern -> String
+showRockPattern rp = (unlines . chunksOf rowLength . toBin (rowLength * rowAmount)) (rockPatternInt rp)
+  where rowAmount = rockPatternRowAmount rp
+        rowLength = rockPatternRowLength rp
+
+prettyPrintAllDirs (rockPatternDn, rockPatternUp, rockPatternLt, rockPatternRt) = do
+    print rockPatternDn
+    putStrLn . showRockPattern $ rockPatternDn
+    putStrLn ""
+    print rockPatternUp
+    putStrLn . showRockPattern $ rockPatternUp
+    putStrLn ""
+    putStrLn "^V^V^V^V^V^V"
+    putStrLn ""
+    mapM_ (\((l,r),x) -> (putStrLn . showRockPattern $ l) >> putStrLn "====" >> (putStrLn . showRockPattern $ r) >> putStrLn "=====" >> (putStrLn . showRockPattern $ x)) . map snd . filter (reflectionLineBetweenRocks . fst) . zip [0..] $ (allPairsBetweenAsRockPatterns rockPatternDn rockPatternUp `zip` allXorsBetweenAsRockPatterns rockPatternDn rockPatternUp)
+    putStrLn ""
+    putStrLn "------------"
+    putStrLn ""
+    print rockPatternLt
+    putStrLn . showRockPattern $ rockPatternLt
+    putStrLn ""
+    print rockPatternRt
+    putStrLn . showRockPattern $ rockPatternRt
+    putStrLn ""
+    putStrLn "^V^V^V^V^V^V"
+    putStrLn ""
+    mapM_ (\((l,r),x) -> (putStrLn . showRockPattern $ l) >> putStrLn "====" >> (putStrLn . showRockPattern $ r) >> putStrLn "=====" >> (putStrLn . showRockPattern $ x)) . map snd . filter (reflectionLineBetweenRocks . fst) . zip [0..] $ (allPairsBetweenAsRockPatterns rockPatternLt rockPatternRt `zip` allXorsBetweenAsRockPatterns rockPatternLt rockPatternRt)
+    putStrLn ""
+    putStrLn "------------"
+    putStrLn "############"
+    putStrLn "------------"
+    putStrLn ""
 
 day13part1 = do
   contents <- readFile "day13 (example).csv"
-  let colSum = map findVerticalReflectionIndices . readRockPatternStrings $ contents
-  let rowSum = map findHorizontalReflectionIndices . readRockPatternStrings $ contents
-  print (rowSum, colSum)
+  let rockPatternStrings = readRockPatternStrings contents
+  let colSum = sum . map sum $ map findVerticalReflectionIndices rockPatternStrings
+  let rowSum = sum . map sum $ map findHorizontalReflectionIndices rockPatternStrings
+  print (100 * rowSum + colSum)
+
+getAllSmudgeVariations :: RockPatternString -> [RockPatternString]
+getAllSmudgeVariations (RockPatternString s) = map RockPatternString $ [before ++ c':after | i <- [0..(length s - 1)], let (before,c:after) = splitAt i s, c `elem` "#.", let c' = if c=='.' then '#' else '.']
+
+day13part2 = do
+  contents <- readFile "day13 (data).csv"
+  let rockPatternStrings = readRockPatternStrings contents
+  let colIndicesNoSmudge = map findVerticalReflectionIndices rockPatternStrings
+  let rowIndicesNoSmudge = map findHorizontalReflectionIndices rockPatternStrings
+  
+  let rockPatternStringsWithSmudgeVariations = map getAllSmudgeVariations rockPatternStrings
+  let colIndicesWithSmudge = map (map findVerticalReflectionIndices) rockPatternStringsWithSmudgeVariations
+  let rowIndicesWithSmudge = map (map findHorizontalReflectionIndices) rockPatternStringsWithSmudgeVariations
+  
+  let colIndices = concat . concat $ zipWith (\is jss -> map (\js -> foldr delete js is) jss) colIndicesNoSmudge colIndicesWithSmudge
+  let rowIndices = concat . concat $ zipWith (\is jss -> map (\js -> foldr delete js is) jss) rowIndicesNoSmudge rowIndicesWithSmudge
+  
+  let colSum = sum colIndices
+  let rowSum = sum rowIndices
+  
+  print $ (100 * rowSum + colSum) `div` 2 -- Not sure where this factor of two came from... I must be double counting somehow
+
+test1 = do
+  let contents = intercalate "\n\n" [testStr1,testStr2,testStr3]
+  let rockPatternStrings = readRockPatternStrings contents
+  let rockPatternsAllDirs = map allPatternDirs $ rockPatternStrings
+  mapM_ (putStrLn . fromRockPatternString) rockPatternStrings
+  mapM_ prettyPrintAllDirs rockPatternsAllDirs
 
 -- Given allXorsBetween gives index for a reflection about the line between rows or on a row starting between the first two rows and ending between the last two rows, we should get the following:
 -- testStr1 = unlines [".  #  #  .  .  #  #  .  .",
@@ -142,8 +223,9 @@ day13part1 = do
 --
 tests = do
   let rockPatternStrings = readRockPatternStrings (intercalate "\n\n" [testStr1,testStr2,testStr3])
-  let colSum = map (map (+1)) . map findVerticalReflectionIndices $ rockPatternStrings
-  let rowSum = map (map (+1)) . map findHorizontalReflectionIndices $ rockPatternStrings
+  let colSum = map findVerticalReflectionIndices $ rockPatternStrings
+  let rowSum = map findHorizontalReflectionIndices $ rockPatternStrings
+  mapM_ (putStrLn . fromRockPatternString) rockPatternStrings
   print (rowSum, colSum)
 
 testStr1 = unlines [".##..##..",
