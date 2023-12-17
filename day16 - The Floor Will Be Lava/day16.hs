@@ -69,13 +69,17 @@ data Beam = Beam {
         beamLocDirSet :: S.Set LocDir } deriving (Show, Eq)
 emptyBeam = Beam mempty mempty
 
+
 inBounds :: V2 Int -> V2 Int -> Bool
 inBounds (V2 width height) (V2 x y) = x >= 0 && y >= 0 && x < width && y < height
+
+inWorld :: World -> V2 Int -> Bool
+inWorld w v = inBounds (worldDims w) v
 
 getNextLocDirsFromHitLocDir :: World -> LocDir -> [LocDir]
 getNextLocDirsFromHitLocDir world@(World rows objs dims) (LocDir loc dir)
     = let c = M.lookup loc objs
-      in traceShow "getNextLocDirsFromHitLocDir (with filter):" $ filter (inBounds dims . getLoc) $ traceShow "getNextLocDirsFromHitLocDir (without filter):" $ case c of
+      in traceShow "getNextLocDirsFromHitLocDir (with filter):" $ filter (inWorld world . getLoc) $ traceShow "getNextLocDirsFromHitLocDir (without filter):" $ case c of
             Just '|'  ->      if dir == up then [upLocDir]
                          else if dir == dn then [dnLocDir]
                          else                   [upLocDir, dnLocDir]
@@ -93,6 +97,30 @@ getNextLocDirsFromHitLocDir world@(World rows objs dims) (LocDir loc dir)
                          else if dir == lt then [upLocDir]
                          else error "Invalid Hit Dir"
             Nothing -> []
+  where upLocDir = LocDir (loc + up) up
+        dnLocDir = LocDir (loc + dn) dn
+        ltLocDir = LocDir (loc + lt) lt
+        rtLocDir = LocDir (loc + rt) rt
+
+getNextLocDirsFromHitLocDirAndChar :: World -> LocDir -> Char -> [LocDir]
+getNextLocDirsFromHitLocDirAndChar world@(World rows objs dims) (LocDir loc dir) char
+    = case char of
+            '|'  ->      if dir == up then [upLocDir]
+                         else if dir == dn then [dnLocDir]
+                         else                   [upLocDir, dnLocDir]
+            '-'  ->      if dir == lt then [ltLocDir]
+                         else if dir == rt then [rtLocDir]
+                         else                   [ltLocDir, rtLocDir]
+            '/'  ->      if dir == rt then [upLocDir]
+                         else if dir == up then [rtLocDir]
+                         else if dir == dn then [ltLocDir]
+                         else if dir == lt then [dnLocDir]
+                         else error "Invalid Hit Dir"
+            '\\' ->      if dir == rt then [dnLocDir]
+                         else if dir == dn then [rtLocDir]
+                         else if dir == up then [ltLocDir]
+                         else if dir == lt then [upLocDir]
+                         else error "Invalid Hit Dir"
   where upLocDir = LocDir (loc + up) up
         dnLocDir = LocDir (loc + dn) dn
         ltLocDir = LocDir (loc + lt) lt
@@ -129,38 +157,22 @@ getUpToNextHit world locDir@(LocDir loc dir)
             | otherwise         = length forwardWorldSlice - 1
         forwardWorldSliceLocDirs = [LocDir (loc + i *^ dir) dir | i <- [sliceUpToHitLength,(sliceUpToHitLength-1)..1]]
 
-getFullResultingBeam :: World -> Beam -> Beam
-getFullResultingBeam world initBeam = progressBeamToNextHit world initBeam
-  -- where end        (beam, prevBeam) = beam == prevBeam
-        -- progress w (beam, prevBeam) = (traceShow "progressBeamToNextHit:" $ progressBeamToNextHit w beam, traceShow "beam:" $ beam)
+getUpToNextHitInclusive :: World -> LocDir -> ([LocDir], Maybe Char)
+getUpToNextHitInclusive world locDir@(LocDir loc dir)
+    | hitsObjBeforeWall = traceShow "getUpToNextHit hitsObjBeforeWall:" $ (locDir:forwardWorldSliceLocDirs, Just hit)
+    | otherwise         = traceShow "getUpToNextHit otherwise:" $ (locDir:forwardWorldSliceLocDirs, Nothing)
+  where forwardWorldSlice = getForwardWorldSliceInDirOrder world locDir
+        hitsObjBeforeWall = any (`elem` "|-/\\") forwardWorldSlice
+        (before,hit:after) = break (`elem` "|-/\\") forwardWorldSlice
+        sliceUpToHitLength
+            | hitsObjBeforeWall = length before
+            | otherwise         = length forwardWorldSlice - 1
+        forwardWorldSliceLocDirs = [LocDir (loc + i *^ dir) dir | i <- [sliceUpToHitLength,(sliceUpToHitLength-1)..1]]
 
 combineBeams :: World -> [Beam] -> Beam
 combineBeams world beams = Beam (concat (map beamLocDirList beams)) (S.unions (map beamLocDirSet beams))
 
 traceShow msg x' = let x = x' in trace (msg ++ "\n" ++ show x ++ "\n") x
-
-progressBeamToNextHit :: World -> Beam -> Beam
-progressBeamToNextHit world beam@(Beam [] _) = error ("progressBeamToNextHit world beam@(Beam [] _): " ++ show (world, beam))
-progressBeamToNextHit world@(World rows objs dims) (Beam locDirList@((LocDir loc dir):_) locDirSet)
-    = trace ("progressBeamToNextHit locDirList:\n" ++ show locDirList ++ "\n") $ combineBeams world allBeams
-  where (sliceUpToNextHit, maybeHitChar) = getUpToNextHit world (LocDir loc dir)
-        maybeIndexOfPrevVisit = findIndex (`S.member` locDirSet) sliceUpToNextHit
-        allBeams = case trace ("maybeIndexOfPrevVisit: " ++ show (maybeIndexOfPrevVisit, locDirSet, sliceUpToNextHit)) maybeIndexOfPrevVisit of
-            Just indexOfPrevVisit -> let sliceUpToPrevVisit = take (indexOfPrevVisit-1) sliceUpToNextHit
-                                     in [Beam (sliceUpToPrevVisit ++ locDirList) (S.union (S.fromList sliceUpToPrevVisit) locDirSet)]
-            Nothing -> let newBeam = Beam (sliceUpToNextHit ++ locDirList) (S.union (S.fromList sliceUpToNextHit) locDirSet)
-                       in case maybeHitChar of
-                            Nothing      -> [newBeam]
-                            Just hitChar -> let hitLocDir = case sliceUpToNextHit of
-                                                    []             -> (LocDir loc dir)
-                                                    (hitInSlice:_) -> hitInSlice
-                                                nextLocDirsFromHitLocDir = filter (not . (`S.member` locDirSet)) $ getNextLocDirsFromHitLocDir world hitLocDir
-                                                nextBeams = map (\nextLocDir -> Beam (nextLocDir : beamLocDirList newBeam) (S.insert nextLocDir (beamLocDirSet newBeam))) nextLocDirsFromHitLocDir
-                                            in map (getFullResultingBeam world) nextBeams
-                                                         
-                                                         
-                                                         
-                                                         
 
 readChar2Ds :: (Num a, Enum a) => [Char] -> [(V2 a, Char)]
 readChar2Ds inStr = do
@@ -182,10 +194,58 @@ readWorld inStr = foldl' updateWorld (World rows mempty dims) char2Ds
                 '.' -> World rs objs dims
                 c   -> World rs (M.insert loc c objs) dims
 
+
+--------- Unverified functions below this line -----------
+
+
+getAllBeamlines :: World -> [LocDir] -> ([BeamLine], S.Set LocDir)
+getAllBeamlines world initEmissions = (\([], finished, visited) -> (finished, visited)) $ until end (progress world) (initEmissions, mempty, mempty)
+  where end        (emissions, finished, visited) = null emissions
+        
+        progress :: World -> ([LocDir],[BeamLine],S.Set LocDir) -> ([LocDir],[BeamLine],S.Set LocDir)
+        progress w (emissions, prevBeamLines, visited) = let childBeamLineInfos = map (getChildBeamLineInfo w visited) emissions
+                                                             childEmissions   = map (\(emissions',          _,        _) -> emissions') childBeamLineInfos
+                                                             childBeamLines   = map (\(         _, beamLines',        _) -> beamLines') childBeamLineInfos
+                                                             childVisitedSets = map (\(         _,          _, visited') -> visited'  ) childBeamLineInfos
+                                                         in (concat childEmissions, prevBeamLines ++ filter (not . null) childBeamLines, S.union visited (S.unions childVisitedSets))
+
+type BeamLine = [LocDir]
+
+getChildBeamLineInfo :: World -> S.Set LocDir -> LocDir -> ([LocDir], BeamLine, S.Set LocDir)
+getChildBeamLineInfo world@(World rows objs dims) visited emission@(LocDir emissionloc emissionDir) = allPaths
+  where (newBeamLine, maybeHitChar) = getUpToNextHitInclusive world (LocDir emissionloc emissionDir)
+        allPaths = if head newBeamLine `S.member` visited
+                    then ([], dropWhile (`S.member` visited) newBeamLine, S.fromList newBeamLine `S.union` visited)
+                    else case maybeHitChar of
+                                Nothing      -> ([], newBeamLine, S.fromList newBeamLine `S.union` visited)
+                                Just hitChar -> let hitLocDir = head newBeamLine
+                                                    nextEmissions = filter (not . (`S.member` visited)) $ getNextLocDirsFromHitLocDirAndChar world hitLocDir hitChar
+                                                in (nextEmissions, newBeamLine, S.fromList newBeamLine `S.union` visited)
+
+getFullResultingBeam' :: World -> Beam -> Beam
+getFullResultingBeam' world beam@(Beam [] _) = error ("progressBeamToNextHit world beam@(Beam [] _): " ++ show (world, beam))
+getFullResultingBeam' world@(World rows objs dims) oldBeam@(Beam locDirList@((LocDir loc dir):_) locDirSet)
+    = trace ("progressBeamToNextHit locDirList:\n" ++ show locDirList ++ "\n") $ combineBeams world allBeams
+  where (sliceUpToNextHit, maybeHitChar) = getUpToNextHit world (LocDir loc dir)
+        maybeIndexOfPrevVisit = findIndex (`S.member` locDirSet) sliceUpToNextHit
+        allBeams = case trace ("maybeIndexOfPrevVisit: " ++ show (maybeIndexOfPrevVisit, locDirSet, sliceUpToNextHit)) maybeIndexOfPrevVisit of
+            Just indexOfPrevVisit -> let sliceUpToPrevVisit = take (indexOfPrevVisit-1) sliceUpToNextHit
+                                     in [Beam (sliceUpToPrevVisit ++ locDirList) (S.union (S.fromList sliceUpToPrevVisit) locDirSet)]
+            Nothing -> let newBeam = Beam (sliceUpToNextHit ++ locDirList) (S.union (S.fromList sliceUpToNextHit) locDirSet)
+                       in case maybeHitChar of
+                            Nothing      -> [newBeam]
+                            Just hitChar -> let hitLocDir = case sliceUpToNextHit of
+                                                    []             -> (LocDir loc dir)
+                                                    (hitInSlice:_) -> hitInSlice
+                                                nextLocDirsFromHitLocDir = filter (not . (`S.member` locDirSet)) $ getNextLocDirsFromHitLocDir world hitLocDir
+                                                nextBeams
+                                                    | null nextLocDirsFromHitLocDir = [oldBeam]
+                                                    | otherwise = map (\nextLocDir -> Beam (nextLocDir : beamLocDirList newBeam) (S.insert nextLocDir (beamLocDirSet newBeam))) nextLocDirsFromHitLocDir
+                                            in map (getFullResultingBeam' world) nextBeams
+
 day16part1 = do
     contents <- readFile "day16 (example).csv"
     let world = readWorld $ contents
-    let startBeamLocDirs = [start]
-    let fullBeam = getFullResultingBeam world $ Beam startBeamLocDirs (S.fromList startBeamLocDirs)
-    mapM_ print . S.toList $ (S.map getLoc $ beamLocDirSet fullBeam)
+    let (beamLines, visited) = getAllBeamlines world [start]
+    mapM_ print . S.toList $ visited
   where start = LocDir (V2 0 0) (V2 1 0)
