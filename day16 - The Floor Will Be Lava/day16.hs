@@ -15,10 +15,10 @@
 -- Output --
 ------------
 -- *Main> day16part1
--- 
+-- 6514
 
 -- *Main> day16part2
--- 
+-- 8089
 
 
 -------------
@@ -145,18 +145,6 @@ getForwardWorldSliceInDirOrder world (LocDir (V2 x y) dir)
   where fullSlice = getFullWorldSliceInDirOrder world (LocDir (V2 x y) dir)
         (V2 width height) = worldDims world
 
-getUpToNextHit :: World -> LocDir -> ([LocDir], Maybe Char)
-getUpToNextHit world locDir@(LocDir loc dir)
-    | hitsObjBeforeWall = (forwardWorldSliceLocDirs, Just hit)
-    | otherwise         = (forwardWorldSliceLocDirs, Nothing)
-  where forwardWorldSlice = getForwardWorldSliceInDirOrder world locDir
-        hitsObjBeforeWall = any (`elem` "|-/\\") forwardWorldSlice
-        (before,hit:after) = break (`elem` "|-/\\") forwardWorldSlice
-        sliceUpToHitLength
-            | hitsObjBeforeWall = length before
-            | otherwise         = length forwardWorldSlice - 1
-        forwardWorldSliceLocDirs = [LocDir (loc + i *^ dir) dir | i <- [sliceUpToHitLength,(sliceUpToHitLength-1)..1]]
-
 getUpToNextHitInclusive :: World -> LocDir -> ([LocDir], Maybe Char)
 getUpToNextHitInclusive world locDir@(LocDir loc dir)
     | hitsObjBeforeWall = (forwardWorldSliceLocDirs ++ [locDir], Just hit)
@@ -193,9 +181,6 @@ readWorld inStr = foldl' updateWorld (World rows mempty dims) char2Ds
             = case char of
                 '.' -> World rs objs dims
                 c   -> World rs (M.insert loc c objs) dims
-
-
---------- Unverified functions below this line -----------
 
 
 getAllBeamlines :: World -> [LocDir] -> ([BeamLine], S.Set LocDir)
