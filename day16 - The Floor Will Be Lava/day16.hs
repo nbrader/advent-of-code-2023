@@ -31,7 +31,6 @@ import Data.List (
     foldl', nub, sort, transpose, isPrefixOf, findIndex, findIndices,
     intercalate, reverse, partition, intersperse, scanl', deleteBy)
 import Data.List.Split (splitOn, chunksOf)
-import qualified Data.Map as M
 import Data.Maybe (fromJust, maybeToList, catMaybes)
 import Linear ((*^))
 import qualified Linear
@@ -61,10 +60,9 @@ rt = V2   1    0
 
 data World = World {
     worldRows :: [String],
-    worldObjs :: M.Map (V2 Int) Char,
     worldDims :: V2 Int } deriving (Show, Eq)
 
-emptyWorld strs dims = World strs mempty dims
+emptyWorld rows dims = World rows dims
 
 
 data Beam = Beam {
@@ -79,34 +77,8 @@ inBounds (V2 width height) (V2 x y) = x >= 0 && y >= 0 && x < width && y < heigh
 inWorld :: World -> V2 Int -> Bool
 inWorld w v = inBounds (worldDims w) v
 
-getNextLocDirsFromHitLocDir :: World -> LocDir -> [LocDir]
-getNextLocDirsFromHitLocDir world@(World rows objs dims) (LocDir loc dir)
-    = let c = M.lookup loc objs
-      in filter (inWorld world . getLoc) $ case c of
-            Just '|'  ->      if dir == up then [upLocDir]
-                         else if dir == dn then [dnLocDir]
-                         else                   [upLocDir, dnLocDir]
-            Just '-'  ->      if dir == lt then [ltLocDir]
-                         else if dir == rt then [rtLocDir]
-                         else                   [ltLocDir, rtLocDir]
-            Just '/'  ->      if dir == rt then [upLocDir]
-                         else if dir == up then [rtLocDir]
-                         else if dir == dn then [ltLocDir]
-                         else if dir == lt then [dnLocDir]
-                         else error "Invalid Hit Dir"
-            Just '\\' ->      if dir == rt then [dnLocDir]
-                         else if dir == dn then [rtLocDir]
-                         else if dir == up then [ltLocDir]
-                         else if dir == lt then [upLocDir]
-                         else error "Invalid Hit Dir"
-            Nothing -> []
-  where upLocDir = LocDir (loc + up) up
-        dnLocDir = LocDir (loc + dn) dn
-        ltLocDir = LocDir (loc + lt) lt
-        rtLocDir = LocDir (loc + rt) rt
-
 getNextLocDirsFromHitLocDirAndChar :: World -> LocDir -> Char -> [LocDir]
-getNextLocDirsFromHitLocDirAndChar world@(World rows objs dims) (LocDir loc dir) char
+getNextLocDirsFromHitLocDirAndChar world@(World rows dims) (LocDir loc dir) char
     = case char of
             '|'  ->      if dir == up then [upLocDir]
                          else if dir == dn then [dnLocDir]
@@ -174,16 +146,11 @@ readChar2Ds inStr = do
     return (V2 x y, char)
 
 readWorld :: String -> World
-readWorld inStr = foldl' updateWorld (World rows mempty dims) char2Ds
+readWorld inStr = World rows dims
   where rows = lines inStr
         height = length rows
         width = length $ head rows
         dims = V2 width height
-        char2Ds = readChar2Ds inStr
-        updateWorld (World rs objs dims) (loc, char)
-            = case char of
-                '.' -> World rs objs dims
-                c   -> World rs (M.insert loc c objs) dims
 
 
 getAllBeamlines :: World -> [LocDir] -> ([BeamLine], S.Set LocDir)
@@ -200,7 +167,7 @@ getAllBeamlines world initEmissions = (\([], finished, visited) -> (finished, vi
 type BeamLine = [LocDir]
 
 getChildBeamLineInfo :: World -> S.Set LocDir -> LocDir -> ([LocDir], BeamLine, S.Set LocDir)
-getChildBeamLineInfo world@(World rows objs dims) visited emission@(LocDir emissionloc emissionDir) = allPaths
+getChildBeamLineInfo world@(World rows dims) visited emission@(LocDir emissionloc emissionDir) = allPaths
   where (newBeamLine, maybeHitChar) = getUpToNextHitInclusive world (LocDir emissionloc emissionDir)
         allPaths = if head newBeamLine `S.member` visited
                     then ([], dropWhile (`S.member` visited) newBeamLine, S.fromList newBeamLine `S.union` visited)
