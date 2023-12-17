@@ -9,6 +9,9 @@
 {-
     To build, run the following shell command in this directory:
         stack --resolver lts-21.22 ghc --package containers-0.6.7 --package linear-1.22 -- -threaded -O2 '.\day16.hs'
+        
+    For multi-core, use the following (replacing N4 with desired number of cores):
+        ./day16 +RTS -N4
 -}
 
 ------------
@@ -219,4 +222,6 @@ day16part2 = do
     let world = readWorld $ contents
         (V2 width height) = worldDims world
         starts = concat [[LocDir (V2 x 0) dn, LocDir (V2 x (width-1)) up] | x <- [0..(width-1)]] ++ concat [[LocDir (V2 0 y) rt, LocDir (V2 (height-1) y) lt] | y <- [0..(height-1)]]
-    print . maximum . map (S.size . S.map getLoc . snd . getAllBeamlines world . (:[])) $ starts
+    let sizes = map (S.size . S.map getLoc . snd . getAllBeamlines world . (:[])) $ starts
+    let sizesInParrallel = sizes `using` parList rdeepseq
+    print . maximum $ sizesInParrallel
