@@ -27,6 +27,7 @@
 import Data.List (foldl', nub, sort)
 import qualified Data.Map as M
 import Data.Maybe (fromJust, maybeToList)
+import Linear hiding (trace)
 import Linear.V2
 import Debug.Trace (trace)
 
@@ -34,9 +35,9 @@ import Debug.Trace (trace)
 -------------
 -- Program --
 -------------
-main = day18part1
+main = day18part2
 
-data DigLine = DigLine {digLineDir :: V2 Int, digLineLength :: Int, digLineCol :: String}
+data DigLine = DigLine {digLineDir :: V2 Int, digLineLength :: Int} deriving (Show)
 
 vUp = V2 ( 0) (-1)
 vDn = V2 ( 0) ( 1)
@@ -49,45 +50,60 @@ readDirStr "D" = vDn
 readDirStr "L" = vLt
 readDirStr "R" = vRt
 
+readDirDigit :: Char -> V2 Int
+readDirDigit '3' = vUp
+readDirDigit '1' = vDn
+readDirDigit '2' = vLt
+readDirDigit '0' = vRt
+readDirDigit c = error (show c)
+
+charToHexDigit :: Char -> Int
+charToHexDigit 'a' = 10
+charToHexDigit 'b' = 11
+charToHexDigit 'c' = 12
+charToHexDigit 'd' = 13
+charToHexDigit 'e' = 14
+charToHexDigit 'f' = 15
+charToHexDigit digit = read [digit]
+
+readHex :: String -> Int
+readHex = sum . zipWith (\x y -> y^x) [0..] . map charToHexDigit
+
 readDigLines :: String -> [DigLine]
 readDigLines inStr = do
     row <- rows
-    let [dirStr, lenStr, colStr] = words row
+    let [dirStr, lenStr, hexStr] = words row
     let dir = readDirStr dirStr
     let len = read lenStr
-    let col = colStr
-    return $ DigLine dir len col
+    return $ DigLine dir len
   where rows = lines inStr
 
+readDigLines2 :: String -> [DigLine]
+readDigLines2 inStr = do
+    row <- rows
+    let [dirStr, lenStr, hexStr] = words row
+    let len = readHex . tail . tail . init $ hexStr
+    let dir = readDirDigit . last . init $ hexStr
+    return $ DigLine dir len
+  where rows = lines inStr
 
-data Graph = Graph {graphEdgesFromV2 :: M.Map (V2 Int) [V2 Int], graphStart :: V2 Int, graphBounds :: V2 Int} deriving (Show)
+start = V2 0 0
 
-readGraph :: String -> Graph
-readGraph inStr = Graph edges startPos bounds
-  where bounds = undefined
-        startPos = V2 0 0
-        edges = undefined
-
-lookupList :: (Ord k) => k -> M.Map k [a] -> [a]
-lookupList k m = concat . maybeToList $ M.lookup k m
-
-pathFromStart :: Graph -> [V2 Int]
-pathFromStart (Graph edges startPos bounds)
-    = until returned step [startPos]
-  where returned (v:[]) = False
-        returned (v:_ ) = v == startPos
-        
-        step (v:visited) = newV:v:visited
-          where newVs = map (v+) $ lookupList v edges
-                newV = if null visited
-                        then head newVs
-                        else let prevV = head visited
-                             in head $ filter (/= prevV) newVs
+pathFromStart :: [DigLine] -> [V2 Int]
+pathFromStart = foldl' step [start]
+  where step (v:visited) (DigLine dir len) = [v + i*^dir | i <- [len, (len-1) .. 1]] ++ v:visited
 
 day18part1 = do
-  contents <- readFile "day18 (data 3).csv"
-  let graph = readGraph contents
-  print . (`div` 2) . length . pathFromStart $ graph
+  contents <- readFile "day18 (data).csv"
+  let edgesPositions = drop 1 . pathFromStart . readDigLines $ contents
+  let interior = findInterior $ edgesPositions
+  print (length edgesPositions + length interior)
+
+day18part2 = do
+  contents <- readFile "day18 (example).csv"
+  let edgesPositions = drop 1 . pathFromStart . readDigLines2 $ contents
+  let interior = findInterior $ edgesPositions
+  print (length edgesPositions + length interior)
 
 rot90 :: V2 Int -> V2 Int
 rot90 (V2 x y) = V2 (-y) x
@@ -95,12 +111,16 @@ rot90 (V2 x y) = V2 (-y) x
 getX (V2 x y) = x
 getY (V2 x y) = y
 
-inBounds :: V2 Int -> V2 Int -> Bool
-inBounds (V2 x y) (V2 width height) = x >= 0 && x < width && y >= 0 && y < height
+inBounds :: V2 Int -> (V2 Int, V2 Int) -> Bool
+inBounds (V2 x y) (V2 minX minY, V2 maxX maxY) = x >= minX && x < maxX && y >= minY && y < maxY
 
-findInterior :: V2 Int -> [V2 Int] -> [V2 Int]
-findInterior bounds positions = nub . concat . map (\((pos,left),(prevPos, prevLt)) -> rayUntilPath (pos+left) left ++ rayUntilPath (prevPos+left) left) $ zip posAndSideDirs prevs
-  where leftInterior = all (\(pos,left) -> rayHitBounds (pos+left) left) posAndLeftDirs
+findInterior :: [V2 Int] -> [V2 Int]
+findInterior positions = nub . concat . map (\((pos,left),(prevPos, prevLt)) -> rayUntilPath (pos+left) left ++ rayUntilPath (prevPos+left) left) $ zip posAndSideDirs prevs
+  where allXs = map (\(V2 x y) -> x) positions
+        allYs = map (\(V2 x y) -> y) positions
+        bounds = (V2 (minimum allXs) (minimum allYs), V2 (maximum allXs) (maximum allYs))
+        
+        leftInterior = all (\(pos,left) -> rayHitBounds (pos+left) left) posAndLeftDirs
         
         flipIfRightInterior
             | leftInterior = id
