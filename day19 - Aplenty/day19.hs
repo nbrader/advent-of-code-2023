@@ -41,15 +41,37 @@ import Data.Tuple
 -------------
 main = day19part1
 
-data Rule = Rule deriving (Show)
-data RuleTree = RuleTree deriving (Show)
+data Category = X | M | A | S deriving (Show)
+data Inequality = NoConstraint | LessThan Category Int | GreaterThan Category Int deriving (Show)
+data Rule = Rule {ruleName :: String, ruleInequalitiesAndResults :: [(Inequality,String)]} deriving (Show)
+data RuleTree = RuleTree {ruleTreeInequality :: Inequality, ruleTreeSatisfiedNext :: Next, ruleTreeNotSatisfiedNext :: Next} deriving (Show)
+data Next = NextRule RuleTree | Accept | Reject deriving (Show)
 data Part = Part deriving (Show)
 
 readRules :: String -> [Rule]
 readRules = map readRule . lines
 
+readCategory :: String -> Category
+readCategory "x" = X
+readCategory "m" = M
+readCategory "a" = A
+readCategory "s" = S
+readCategory  c  = error c
+
+readInequalityAndSatisfiedResult :: String -> (Inequality,String)
+readInequalityAndSatisfiedResult inStr
+    | '<' `elem` inStr = (\[catStr,boundaryAndResultStr] -> let [boundaryStr,resultStr] = splitOn ":" boundaryAndResultStr in (LessThan    (readCategory catStr) (read boundaryStr), resultStr)) . splitOn "<" $ inStr
+    | '>' `elem` inStr = (\[catStr,boundaryAndResultStr] -> let [boundaryStr,resultStr] = splitOn ":" boundaryAndResultStr in (GreaterThan (readCategory catStr) (read boundaryStr), resultStr)) . splitOn ">" $ inStr
+    | otherwise        = (NoConstraint, inStr)
+
+readInequalitiesAndResults :: String -> [(Inequality,String)]
+readInequalitiesAndResults = map readInequalityAndSatisfiedResult . splitOn ","
+
 readRule :: String -> Rule
-readRule = undefined
+readRule inStr = Rule { ruleName = nameStr,
+                        ruleInequalitiesAndResults = readInequalitiesAndResults inequalityStr }
+  where (nameStr, after1) = break (=='{') inStr
+        (inequalityStr, _) = break (=='}') (drop (length "{") $ after1)
 
 toRuleTree :: [Rule] -> RuleTree
 toRuleTree = undefined
@@ -78,4 +100,5 @@ day19part1 = do
   let reducedRuleTree = reduce ruleTree
   let acceptedParts = catMaybes . map (apply reducedRuleTree) $ parts
   let total = sum $ map partScore acceptedParts
-  print total
+  -- print total
+  mapM_ print rules
