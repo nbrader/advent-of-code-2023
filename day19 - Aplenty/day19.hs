@@ -67,14 +67,26 @@ readInequalityAndSatisfiedResult inStr
 readInequalitiesAndResults :: String -> [(Inequality,String)]
 readInequalitiesAndResults = map readInequalityAndSatisfiedResult . splitOn ","
 
+inequalitiesAndResultsToRuleTree :: [(Inequality,String)] -> RuleTree
+inequalitiesAndResultsToRuleTree [(inequality,"R")] = RuleTree inequality Reject ()
+inequalitiesAndResultsToRuleTree [(inequality,"A")] = RuleTree inequality Accept ()
+inequalitiesAndResultsToRuleTree [(inequality,resultStr)] = 
+inequalitiesAndResultsToRuleTree ((inequality,resultStr):inequalitiesAndResults)
+
 readRule :: String -> Rule
 readRule inStr = Rule { ruleName = nameStr,
                         ruleInequalitiesAndResults = readInequalitiesAndResults inequalityStr }
   where (nameStr, after1) = break (=='{') inStr
         (inequalityStr, _) = break (=='}') (drop (length "{") $ after1)
 
+rulesToRuleMap :: [Rule] -> M.Map String Rule
+rulesToRuleMap rules = M.fromList [(ruleName r, r) | r <- rules]
+
 toRuleTree :: [Rule] -> RuleTree
-toRuleTree = undefined
+toRuleTree rules = foldl' (\(inequality, resultStr) -> ) inRuleInequalitiesAndResults
+  where rulesMap = rulesToRuleMap rules
+        Just (Rule "in" inRuleInequalitiesAndResults) = M.lookup "in" rulesMap
+        
 
 readParts :: String -> [Part]
 readParts = map readPart . lines
