@@ -105,10 +105,10 @@ readPart inStr = Part x m a s
         s = read sStr
 
 reduce :: Predicate -> Predicate
-reduce (RuleTreeResult (RuleTree  NoConstraint               satisfied notSatisfied))     = reduce satisfied
+reduce (RuleTreeResult (RuleTree  NoConstraint                   satisfied notSatisfied)) = reduce satisfied
 reduce (RuleTreeResult (RuleTree (GreaterThan category boundary) satisfied notSatisfied)) = reduce $ RuleTreeResult (RuleTree (LessThan category (boundary+1)) notSatisfied satisfied)
-reduce (RuleTreeResult (RuleTree (LessThan category1 boundary1) satisfied@(RuleTreeResult (RuleTree (LessThan category2 boundary2) innerSatisfied _)) notSatisfied))
-    | category1 == category2 && boundary1 > boundary2 = reduce innerSatisfied
+reduce (RuleTreeResult (RuleTree (LessThan category1 boundary1)  satisfied@(RuleTreeResult (RuleTree (LessThan category2 boundary2) innerSatisfied _)) notSatisfied))
+    -- | category1 == category2 && boundary1 > boundary2 = reduce innerSatisfied
     | ( reducedSatisfied /= satisfied
       || reducedNotSatisfied /= notSatisfied)         = RuleTreeResult (RuleTree (LessThan category1 boundary1) reducedSatisfied reducedNotSatisfied)
     | otherwise                                       = RuleTreeResult (RuleTree (LessThan category1 boundary1) satisfied        notSatisfied)
