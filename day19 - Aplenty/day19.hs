@@ -131,10 +131,10 @@ boundsVolume (Bounds (Interval (Just xMin) (Just xMax)) (Interval (Just mMin) (J
 boundsVolume (Bounds xInterval mInterval aInterval sInterval) = product [intervalSizeInBoundsBodge xInterval, intervalSizeInBoundsBodge mInterval, intervalSizeInBoundsBodge aInterval, intervalSizeInBoundsBodge sInterval]
 
 intervalSizeInBoundsBodge :: Interval -> Int
-intervalSizeInBoundsBodge (Interval Nothing Nothing) = 4000 - 0
-intervalSizeInBoundsBodge (Interval Nothing (Just upper)) = min upper 4000 - 0
-intervalSizeInBoundsBodge (Interval (Just lower) Nothing) = 4000 - max lower 0
-intervalSizeInBoundsBodge (Interval (Just lower) (Just upper)) = min upper 4000 - max lower 0
+intervalSizeInBoundsBodge (Interval Nothing Nothing) = 4001 - 1
+intervalSizeInBoundsBodge (Interval Nothing (Just upper)) = clampPositive (min upper 4001) - 1
+intervalSizeInBoundsBodge (Interval (Just lower) Nothing) = 4001 - max lower 1
+intervalSizeInBoundsBodge (Interval (Just lower) (Just upper)) = clampPositive (min upper 4001) - max lower 1
 
 clampPositive x
     | x < 0     = 0
