@@ -128,7 +128,13 @@ boundsVolume (Bounds (Interval (Just xMin) (Just xMax)) (Interval (Just mMin) (J
         mSize = clampPositive $ mMax - mMin
         aSize = clampPositive $ aMax - aMin
         sSize = clampPositive $ sMax - sMin
-boundsVolume bounds = error (show bounds)
+boundsVolume (Bounds xInterval mInterval aInterval sInterval) = product [intervalSizeInBoundsBodge xInterval, intervalSizeInBoundsBodge mInterval, intervalSizeInBoundsBodge aInterval, intervalSizeInBoundsBodge sInterval]
+
+intervalSizeInBoundsBodge :: Interval -> Int
+intervalSizeInBoundsBodge (Interval Nothing Nothing) = 4000 - 0
+intervalSizeInBoundsBodge (Interval Nothing (Just upper)) = min upper 4000 - 0
+intervalSizeInBoundsBodge (Interval (Just lower) Nothing) = 4000 - max lower 0
+intervalSizeInBoundsBodge (Interval (Just lower) (Just upper)) = min upper 4000 - max lower 0
 
 clampPositive x
     | x < 0     = 0
