@@ -124,17 +124,17 @@ emptyBounds = Bounds (Interval Nothing Nothing) (Interval Nothing Nothing) (Inte
 
 boundsVolume :: Bounds -> Int
 boundsVolume (Bounds (Interval (Just xMin) (Just xMax)) (Interval (Just mMin) (Just mMax)) (Interval (Just aMin) (Just aMax)) (Interval (Just sMin) (Just sMax))) = product [xSize, mSize, aSize, sSize]
-  where xSize = clampPositive $ xMax - xMin
-        mSize = clampPositive $ mMax - mMin
-        aSize = clampPositive $ aMax - aMin
-        sSize = clampPositive $ sMax - sMin
+  where xSize = clampPositive $ xMax - xMin + 1
+        mSize = clampPositive $ mMax - mMin + 1
+        aSize = clampPositive $ aMax - aMin + 1
+        sSize = clampPositive $ sMax - sMin + 1
 boundsVolume (Bounds xInterval mInterval aInterval sInterval) = product [intervalSizeInBoundsBodge xInterval, intervalSizeInBoundsBodge mInterval, intervalSizeInBoundsBodge aInterval, intervalSizeInBoundsBodge sInterval]
 
 intervalSizeInBoundsBodge :: Interval -> Int
-intervalSizeInBoundsBodge (Interval Nothing Nothing) = 4001 - 1
-intervalSizeInBoundsBodge (Interval Nothing (Just upper)) = clampPositive (min upper 4001) - 1
-intervalSizeInBoundsBodge (Interval (Just lower) Nothing) = 4001 - max lower 1
-intervalSizeInBoundsBodge (Interval (Just lower) (Just upper)) = clampPositive (min upper 4001) - max lower 1
+intervalSizeInBoundsBodge (Interval Nothing Nothing) = 4001 - 1 + 1
+intervalSizeInBoundsBodge (Interval Nothing (Just upper)) = clampPositive (min upper 4001) - 1 + 1
+intervalSizeInBoundsBodge (Interval (Just lower) Nothing) = 4001 - max lower 1 + 1
+intervalSizeInBoundsBodge (Interval (Just lower) (Just upper)) = clampPositive (min upper 4001) - max lower 1 + 1
 
 clampPositive x
     | x < 0     = 0
