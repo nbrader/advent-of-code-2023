@@ -175,7 +175,7 @@ trimBoundsToBelow boundary S bounds = bounds {boundsS = trimIntervalToBelow boun
 volume :: Predicate -> Int
 volume pred = go (emptyBounds, pred)
   where go :: (Bounds, Predicate) -> Int
-        go (bounds, RuleTreeResult (RuleTree (LessThan category boundary) satisfied notSatisfied)) = go (trimBoundsToAbove boundary category bounds, satisfied) + go (trimBoundsToBelow boundary category bounds, notSatisfied)
+        go (bounds, RuleTreeResult (RuleTree (LessThan category boundary) satisfied notSatisfied)) = go (trimBoundsToBelow boundary category bounds, satisfied) + go (trimBoundsToAbove boundary category bounds, notSatisfied)
         go (bounds, Accept) = boundsVolume bounds
         go (_, Reject) = 0
         go x = error (show x)
