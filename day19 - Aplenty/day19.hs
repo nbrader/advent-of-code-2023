@@ -117,7 +117,62 @@ reduce (RuleTreeResult (RuleTree (LessThan category1 boundary1) satisfied@(RuleT
 reduce (RuleTreeResult (RuleTree (LessThan category boundary) satisfied notSatisfied)) = RuleTreeResult (RuleTree (LessThan category boundary) (reduce satisfied) (reduce notSatisfied))
 reduce Accept = Accept
 reduce Reject = Reject
--- reduce x = error (show x)
+
+data Interval = Interval {intervalLower :: Maybe Int, intervalUpper :: Maybe Int} deriving (Show)
+data Bounds = Bounds {boundsX :: Interval, boundsM :: Interval, boundsA :: Interval, boundsS :: Interval} deriving (Show)
+emptyBounds = Bounds (Interval Nothing Nothing) (Interval Nothing Nothing) (Interval Nothing Nothing) (Interval Nothing Nothing)
+
+boundsVolume :: Bounds -> Int
+boundsVolume (Bounds (Interval (Just xMin) (Just xMax)) (Interval (Just mMin) (Just mMax)) (Interval (Just aMin) (Just aMax)) (Interval (Just sMin) (Just sMax))) = product [xSize, mSize, aSize, sSize]
+  where xSize = clampPositive $ xMax - xMin
+        mSize = clampPositive $ mMax - mMin
+        aSize = clampPositive $ aMax - aMin
+        sSize = clampPositive $ sMax - sMin
+boundsVolume bounds = error (show bounds)
+
+clampPositive x
+    | x < 0     = 0
+    | otherwise = x
+
+trimIntervalToAbove :: Int -> Interval -> Interval
+trimIntervalToAbove boundary (Interval Nothing      Nothing     ) = Interval (Just $ boundary+1) Nothing
+trimIntervalToAbove boundary (Interval Nothing      (Just upper)) = Interval (Just $ boundary+1) (Just upper)
+trimIntervalToAbove boundary (Interval (Just lower) Nothing     )
+    | boundary < lower = Interval (Just lower) Nothing
+    | otherwise        = Interval (Just $ boundary+1) Nothing
+trimIntervalToAbove boundary (Interval (Just lower) (Just upper))
+    | boundary < lower = Interval (Just lower) (Just upper)
+    | otherwise        = Interval (Just $ boundary+1) (Just upper)
+
+trimIntervalToBelow :: Int -> Interval -> Interval
+trimIntervalToBelow boundary (Interval Nothing      Nothing) = Interval Nothing      (Just $ boundary-1)
+trimIntervalToBelow boundary (Interval (Just lower) Nothing) = Interval (Just lower) (Just $ boundary-1)
+trimIntervalToBelow boundary (Interval Nothing (Just upper))
+    | boundary > upper = Interval Nothing      (Just upper)
+    | otherwise        = Interval Nothing      (Just $ boundary-1)
+trimIntervalToBelow boundary (Interval (Just lower) (Just upper))
+    | boundary > upper = Interval (Just lower) (Just upper)
+    | otherwise        = Interval (Just lower) (Just $ boundary-1)
+
+trimBoundsToAbove :: Int -> Category -> Bounds -> Bounds
+trimBoundsToAbove boundary X bounds = bounds {boundsX = trimIntervalToAbove boundary (boundsX bounds)}
+trimBoundsToAbove boundary M bounds = bounds {boundsM = trimIntervalToAbove boundary (boundsM bounds)}
+trimBoundsToAbove boundary A bounds = bounds {boundsA = trimIntervalToAbove boundary (boundsA bounds)}
+trimBoundsToAbove boundary S bounds = bounds {boundsS = trimIntervalToAbove boundary (boundsS bounds)}
+
+trimBoundsToBelow :: Int -> Category -> Bounds -> Bounds
+trimBoundsToBelow boundary X bounds = bounds {boundsX = trimIntervalToBelow boundary (boundsX bounds)}
+trimBoundsToBelow boundary M bounds = bounds {boundsM = trimIntervalToBelow boundary (boundsM bounds)}
+trimBoundsToBelow boundary A bounds = bounds {boundsA = trimIntervalToBelow boundary (boundsA bounds)}
+trimBoundsToBelow boundary S bounds = bounds {boundsS = trimIntervalToBelow boundary (boundsS bounds)}
+
+volume :: Predicate -> Int
+volume pred = go (emptyBounds, pred)
+  where go :: (Bounds, Predicate) -> Int
+        go (bounds, RuleTreeResult (RuleTree (LessThan category boundary) satisfied notSatisfied)) = go (trimBoundsToAbove boundary category bounds, satisfied) + go (trimBoundsToBelow boundary category bounds, notSatisfied)
+        go (bounds, Accept) = boundsVolume bounds
+        go (_, Reject) = 0
+        go x = error (show x)
 
 satisfies :: Part -> Predicate -> Bool
 (Part x m a s) `satisfies` (RuleTreeResult (RuleTree NoConstraint             satisfied notSatisfied)) = Part x m a s `satisfies` satisfied
@@ -158,14 +213,11 @@ day19part1 = do
   print total
 
 day19part2 = do
-  contents <- readFile "day19 (data).csv"
+  contents <- readFile "day19 (example).csv"
   let [rulesStr, partsStr] = splitOn "\n\n" $ contents
   let rules = readRules rulesStr
   let pred = RuleTreeResult $ toRuleTree rules
   let predWithBounds = addBoundBox pred
   let reducedPred = reduce predWithBounds
-  let acceptedParts = filter (`satisfies` pred) $ allParts
-  let total = sum $ map partScore acceptedParts
-  print pred
-  putStrLn ""
-  print reducedPred
+  let total = volume reducedPred
+  print total
