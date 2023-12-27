@@ -1,5 +1,5 @@
 #!/usr/bin/env stack
--- stack --resolver lts-21.22 ghci --package containers-0.6.7 --package linear-1.22 --package split-0.2.3.5
+-- stack --resolver lts-21.22 ghci --package containers-0.6.7 --package linear-1.22 --package split-0.2.3.5 --package deque-0.4.4.1
 
 -------------------------------------
 -------------------------------------
@@ -34,6 +34,7 @@ import Debug.Trace (trace)
 import Data.Ord
 import Data.Function
 import Data.Tuple
+import Deque.Strict as D
 
 
 -------------
@@ -41,26 +42,51 @@ import Data.Tuple
 -------------
 main = day20part1
 
-data ModuleType = FlipFlop | Conjuction | Broadcaster deriving (Show, Eq)
-data Module = Module {moduleType :: ModuleType, moduleName :: String, moduleDestNames :: [String]} deriving (Show, Eq)
+-- START ModuleSpec Parse --
+data ModuleType = FlipFlopType | ConjuctionType | BroadcasterType deriving (Show, Eq)
+data ModuleSpec = ModuleSpec {moduleType :: ModuleType, moduleName :: String, moduleDestNames :: [String]} deriving (Show, Eq)
 
 readModuleType :: String -> ModuleType
-readModuleType "%" = FlipFlop
-readModuleType "&" = Conjuction
-readModuleType _   = Broadcaster
+readModuleType "%" = FlipFlopType
+readModuleType "&" = ConjuctionType
+readModuleType _   = BroadcasterType
 
-readModule :: String -> Module
-readModule inStr = Module moduleType name destNames
+readModuleSpec :: String -> ModuleSpec
+readModuleSpec inStr = ModuleSpec moduleType name destNames
   where (typeStr, after1) = splitAt 1 $ inStr
         [nameStr, destsStr] = splitOn " -> " $ after1
         destNames = splitOn ", " destsStr
         
         moduleType = readModuleType typeStr
         name
-            | moduleType == Broadcaster = "broadcaster"
+            | moduleType == BroadcasterType = "broadcaster"
             | otherwise                 = nameStr
+-- END ModuleSpec Parse --
+
+-- START System Parse --
+data Pulse = Pulse {pulseRecipient :: String, isHigh :: Bool} deriving (Show, Eq)
+
+data FlipFlop = FlipFlop {ffIsOn :: Bool} deriving (Show, Eq)
+data Conjuction = Conjuction {cnLastPulses :: M.Map String Pulse} deriving (Show, Eq)
+data Broadcaster = Broadcaster {bcPresses :: Int} deriving (Show, Eq)
+data Module = FlipFlopModule FlipFlop | ConjuctionModule Conjuction | BroadcasterModule Broadcaster deriving (Show, Eq)
+data ModuleAndRecipients = ModuleAndRecipients {marModule :: Module, marRecipients :: [String]} deriving (Show, Eq)
+
+data System = System {sysModules :: M.Map String ModuleAndRecipients, sysPulses :: D.Deque Pulse} deriving (Show, Eq)
+emptySystem = System mempty mempty
+
+-- readSystem :: String -> System
+readSystem inStr = foldl' updateSystemWithModuleSpec emptySystem modulesSpecs
+  where modulesSpecs = map readModuleSpec . lines $ inStr
+
+updateSystemWithModuleSpec :: System -> ModuleSpec -> System
+updateSystemWithModuleSpec (System modules pulses) (ModuleSpec moduleType name destNames)
+    = undefined
+
+-- END System Parse --
+
 
 day20part1 = do
   contents <- readFile "day20 (example).csv"
-  let modules = map readModule . lines $ contents
-  mapM_ print modules
+  let system = readSystem $ contents
+  print system
