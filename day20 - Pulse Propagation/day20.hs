@@ -64,7 +64,7 @@ readModuleSpec inStr = ModuleSpec moduleType name recipients
 -- END ModuleSpec Parse --
 
 -- START System Parse --
-data Pulse = Pulse {pulseRecipient :: String, isHigh :: Bool} deriving (Show, Eq)
+data Pulse = Pulse {pulseSender :: String, pulseRecipient :: String, isHigh :: Bool} deriving (Show, Eq)
 
 data FlipFlop = FlipFlop {ffIsOn :: Bool} deriving (Show, Eq)
 data Conjunction = Conjunction {cnLastPulseIsHighMap :: M.Map String Bool} deriving (Show, Eq)
@@ -131,7 +131,7 @@ broadcast system =
     let modulesAndRecipients = sysModulesAndRecipients system
         updatedModulesAndRecipients = M.map updateBroadcaster modulesAndRecipients
         broadcasterRecips = maybe [] marRecipients $ M.lookup "broadcaster" modulesAndRecipients
-        lowPulses = map (\recip -> Pulse { pulseRecipient = recip, isHigh = False }) broadcasterRecips
+        lowPulses = map (\recip -> Pulse { pulseSender = "broadcaster", pulseRecipient = recip, isHigh = False }) broadcasterRecips
         updatedPulses = foldl' (flip D.snoc) (sysPendingPulses system) lowPulses
         newProcessedPulses = sysProcessedPulses system ++ lowPulses
     in system { sysModulesAndRecipients = updatedModulesAndRecipients, sysPendingPulses = updatedPulses, sysProcessedPulses = newProcessedPulses }
@@ -148,9 +148,9 @@ processPulse pulse system =
   let moduleName = pulseRecipient pulse
       moduleAndRecipients = fromJust $ M.lookup moduleName $ sysModulesAndRecipients system
       updatedSystem = case marModule moduleAndRecipients of
-                       FlipFlopModule ff -> trace ("FlipFlop " ++ moduleName ++ " " ++ show ff) $ processFlipFlopPulse pulse ff moduleAndRecipients system
-                       ConjunctionModule cn -> trace ("Conjunction " ++ moduleName ++ " " ++ show cn) $ processConjunctionPulse pulse cn moduleAndRecipients system
-                       BroadcasterModule bc -> trace ("Broadcaster " ++ moduleName ++ " "  ++ show bc) $ processBroadcasterPulse pulse bc moduleAndRecipients system
+                       FlipFlopModule ff -> trace ("FlipFlop " ++ show (isHigh pulse) ++ " " ++ moduleName ++ " " ++ show ff) $ processFlipFlopPulse pulse ff moduleAndRecipients system
+                       ConjunctionModule cn -> trace ("Conjunction " ++ show (isHigh pulse) ++ " " ++ moduleName ++ " " ++ show cn) $ processConjunctionPulse pulse cn moduleAndRecipients system
+                       BroadcasterModule bc -> trace ("Broadcaster " ++ show (isHigh pulse) ++ " " ++ moduleName ++ " "  ++ show bc) $ processBroadcasterPulse pulse bc moduleAndRecipients system
       newProcessedPulses = sysProcessedPulses updatedSystem ++ [pulse]
   in updatedSystem { sysProcessedPulses = newProcessedPulses }
 
@@ -159,7 +159,7 @@ processFlipFlopPulse pulse ff mar system =
     if isHigh pulse
     then system  -- Ignore high pulses
     else let newFfState = not $ ffIsOn ff
-             newPulse = Pulse { pulseRecipient = undefined, isHigh = newFfState }
+             newPulse = Pulse { pulseSender = marName mar, pulseRecipient = undefined, isHigh = newFfState }
              updatedPulses = foldl' (\acc r -> D.snoc (newPulse { pulseRecipient = r }) acc) (sysPendingPulses system) (marRecipients mar)
              updatedModule = FlipFlopModule $ FlipFlop newFfState
              updatedModulesAndRecipients = M.insert (marName mar) (ModuleAndRecipients (marName mar) updatedModule (marRecipients mar)) (sysModulesAndRecipients system)
@@ -168,16 +168,16 @@ processFlipFlopPulse pulse ff mar system =
 
 processConjunctionPulse :: Pulse -> Conjunction -> ModuleAndRecipients -> System -> System
 processConjunctionPulse pulse cn mar system =
-    let updatedMap = M.insert (pulseRecipient pulse) (isHigh pulse) (cnLastPulseIsHighMap cn)
+    let updatedMap = M.insert (pulseSender pulse) (isHigh pulse) (cnLastPulseIsHighMap cn)
         allHigh = and $ M.elems updatedMap
-        newPulse = Pulse { pulseRecipient = undefined, isHigh = not allHigh }
+        newPulse = Pulse { pulseSender = marName mar, pulseRecipient = undefined, isHigh = not allHigh }
         updatedPulses = foldl' (\acc r -> D.snoc (newPulse { pulseRecipient = r }) acc) (sysPendingPulses system) (marRecipients mar)
     in system { sysModulesAndRecipients = M.insert (marName mar) (ModuleAndRecipients (marName mar) (ConjunctionModule $ Conjunction updatedMap) (marRecipients mar)) (sysModulesAndRecipients system),
                 sysPendingPulses = updatedPulses }
 
 processBroadcasterPulse :: Pulse -> Broadcaster -> ModuleAndRecipients -> System -> System
 processBroadcasterPulse pulse bc mar system =
-    let newPulse = Pulse { pulseRecipient = undefined, isHigh = isHigh pulse }
+    let newPulse = Pulse { pulseSender = marName mar, pulseRecipient = undefined, isHigh = isHigh pulse }
         updatedPulses = foldl' (\acc r -> D.snoc (newPulse { pulseRecipient = r }) acc) (sysPendingPulses system) (marRecipients mar)
     in system { sysPendingPulses = updatedPulses }
 
