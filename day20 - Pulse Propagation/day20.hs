@@ -119,10 +119,10 @@ processPresses system
     | pressCount == 0 = system
     | otherwise       = processPresses $ case D.uncons (sysPendingPulses system) of
                             Nothing
-                                -> broadcast system
+                                -> trace ("\n") $ broadcast system
                             Just (pulse, remainingPulses)
-                                -> let updatedSystem = processPulse pulse system
-                                   in updatedSystem { sysPendingPulses = remainingPulses }
+                                -> let updatedSystem = processPulse pulse (system { sysPendingPulses = remainingPulses })
+                                   in updatedSystem
   where broadcaster = fromJust $ M.lookup "broadcaster" (sysModulesAndRecipients system)
         (ModuleAndRecipients _ (BroadcasterModule (Broadcaster pressCount)) _) = broadcaster
 
@@ -148,9 +148,9 @@ processPulse pulse system =
   let moduleName = pulseRecipient pulse
       moduleAndRecipients = fromJust $ M.lookup moduleName $ sysModulesAndRecipients system
       updatedSystem = case marModule moduleAndRecipients of
-                       FlipFlopModule ff -> processFlipFlopPulse pulse ff moduleAndRecipients system
-                       ConjunctionModule cn -> processConjunctionPulse pulse cn moduleAndRecipients system
-                       BroadcasterModule bc -> processBroadcasterPulse pulse bc moduleAndRecipients system
+                       FlipFlopModule ff -> trace ("FlipFlop " ++ moduleName ++ " " ++ show ff) $ processFlipFlopPulse pulse ff moduleAndRecipients system
+                       ConjunctionModule cn -> trace ("Conjunction " ++ moduleName ++ " " ++ show cn) $ processConjunctionPulse pulse cn moduleAndRecipients system
+                       BroadcasterModule bc -> trace ("Broadcaster " ++ moduleName ++ " "  ++ show bc) $ processBroadcasterPulse pulse bc moduleAndRecipients system
       newProcessedPulses = sysProcessedPulses updatedSystem ++ [pulse]
   in updatedSystem { sysProcessedPulses = newProcessedPulses }
 
