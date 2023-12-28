@@ -44,7 +44,7 @@ main = day20part1
 
 -- START ModuleSpec Parse --
 data ModuleType = FlipFlopType | ConjuctionType | BroadcasterType deriving (Show, Eq)
-data ModuleSpec = ModuleSpec {moduleType :: ModuleType, moduleName :: String, moduleDestNames :: [String]} deriving (Show, Eq)
+data ModuleSpec = ModuleSpec {moduleType :: ModuleType, moduleName :: String, moduleRecipients :: [String]} deriving (Show, Eq)
 
 readModuleType :: String -> ModuleType
 readModuleType "%" = FlipFlopType
@@ -52,10 +52,10 @@ readModuleType "&" = ConjuctionType
 readModuleType _   = BroadcasterType
 
 readModuleSpec :: String -> ModuleSpec
-readModuleSpec inStr = ModuleSpec moduleType name destNames
+readModuleSpec inStr = ModuleSpec moduleType name recipients
   where (typeStr, after1) = splitAt 1 $ inStr
         [nameStr, destsStr] = splitOn " -> " $ after1
-        destNames = splitOn ", " destsStr
+        recipients = splitOn ", " destsStr
         
         moduleType = readModuleType typeStr
         name
@@ -67,12 +67,12 @@ readModuleSpec inStr = ModuleSpec moduleType name destNames
 data Pulse = Pulse {pulseRecipient :: String, isHigh :: Bool} deriving (Show, Eq)
 
 data FlipFlop = FlipFlop {ffIsOn :: Bool} deriving (Show, Eq)
-data Conjuction = Conjuction {cnLastPulses :: M.Map String Pulse} deriving (Show, Eq)
+data Conjuction = Conjuction {cnLastPulseIsHighMap :: M.Map String Bool} deriving (Show, Eq)
 data Broadcaster = Broadcaster {bcPresses :: Int} deriving (Show, Eq)
 data Module = FlipFlopModule FlipFlop | ConjuctionModule Conjuction | BroadcasterModule Broadcaster deriving (Show, Eq)
 data ModuleAndRecipients = ModuleAndRecipients {marModule :: Module, marRecipients :: [String]} deriving (Show, Eq)
 
-data System = System {sysModules :: M.Map String ModuleAndRecipients, sysPulses :: D.Deque Pulse} deriving (Show, Eq)
+data System = System {sysModulesAndRecipients :: M.Map String ModuleAndRecipients, sysPulses :: D.Deque Pulse} deriving (Show, Eq)
 emptySystem = System mempty mempty
 
 -- readSystem :: String -> System
@@ -80,13 +80,43 @@ readSystem inStr = foldl' updateSystemWithModuleSpec emptySystem modulesSpecs
   where modulesSpecs = map readModuleSpec . lines $ inStr
 
 updateSystemWithModuleSpec :: System -> ModuleSpec -> System
-updateSystemWithModuleSpec (System modules pulses) (ModuleSpec moduleType name destNames)
-    = undefined
+updateSystemWithModuleSpec s m
+    = s {sysModulesAndRecipients = updateModulesAndRecipientsWithModule (sysModulesAndRecipients s)}
+  where updateModulesAndRecipientsWithModule :: M.Map String ModuleAndRecipients -> M.Map String ModuleAndRecipients
+        updateModulesAndRecipientsWithModule oldModulesAndRecipients = M.insert newModuleName (ModuleAndRecipients newModule (moduleRecipients m)) newModulesAndRecipients
+          where newModuleName = moduleName m
+                recipients = moduleRecipients m
+                
+                -- find names of all existing senders in modules and populate map with low pulse
+                existingSenders = M.map (const False) $ M.filter (\oldModuleAndRecipient -> newModuleName `elem` marRecipients oldModuleAndRecipient) oldModulesAndRecipients
+                
+                newModule = case moduleType m of
+                    FlipFlopType -> FlipFlopModule (FlipFlop False)
+                    ConjuctionType -> ConjuctionModule (Conjuction existingSenders)
+                    BroadcasterType -> BroadcasterModule (Broadcaster 0)
+                
+                --update all existing ConjuctionType recipients
+                newModulesAndRecipients = M.mapWithKey updateIfConjunctionModule oldModulesAndRecipients
+                
+                updateIfConjunctionModule :: String -> ModuleAndRecipients -> ModuleAndRecipients
+                updateIfConjunctionModule recipientName m'@(ModuleAndRecipients (ConjuctionModule (Conjuction lastPulseIsHighMap)) _)
+                    | recipientName `elem` recipients = m' {marModule = ConjuctionModule (Conjuction (M.insert newModuleName False lastPulseIsHighMap))}
+                    | otherwise                       = m'
+                updateIfConjunctionModule k m' = m'
 
--- END System Parse --
-
+setPresses :: Int -> System -> System
+setPresses newPresses system = system { sysModulesAndRecipients = updatedModulesAndRecipients }
+  where
+    updatedModulesAndRecipients = M.map updateIfBroadcaster $ sysModulesAndRecipients system
+    
+    updateIfBroadcaster :: ModuleAndRecipients -> ModuleAndRecipients
+    updateIfBroadcaster mar@(ModuleAndRecipients (BroadcasterModule _) recips) = 
+      mar { marModule = BroadcasterModule (Broadcaster newPresses) }
+    updateIfBroadcaster mar = mar
 
 day20part1 = do
-  contents <- readFile "day20 (example).csv"
-  let system = readSystem $ contents
-  print system
+    contents <- readFile "day20 (example 2).csv"
+    let system = setPresses 10 $ readSystem $ contents
+    mapM_ print . M.keys $ sysModulesAndRecipients system
+    putStrLn ""
+    mapM_ print . M.elems $ sysModulesAndRecipients system
