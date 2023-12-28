@@ -115,15 +115,15 @@ setPresses newPresses system = system { sysModulesAndRecipients = updatedModules
       mar { marModule = BroadcasterModule (Broadcaster newPresses) }
     updateIfBroadcaster mar = mar
 
-processPresses :: System -> System
+processPresses :: System -> [System]
 processPresses system = case D.uncons (sysPendingPulses system) of
                             Nothing
                                 -> if pressCount == 0
-                                    then system
-                                    else processPresses $ broadcast system
+                                    then []
+                                    else [broadcast system] ++ processPresses (broadcast system)
                             Just (pulse, remainingPulses)
                                 -> let updatedSystem = processPulse pulse (system { sysPendingPulses = remainingPulses })
-                                   in processPresses $ updatedSystem
+                                   in processPresses updatedSystem
   where broadcaster = fromJust $ M.lookup "broadcaster" (sysModulesAndRecipients system)
         (ModuleAndRecipients _ (BroadcasterModule (Broadcaster pressCount)) _) = broadcaster
 
@@ -150,9 +150,9 @@ processPulse pulse system =
             Nothing -> system
             Just moduleAndRecipients ->
                       case marModule moduleAndRecipients of
-                       FlipFlopModule ff -> {-trace ("FlipFlop " ++ show (isHigh pulse) ++ " " ++ moduleName ++ " " ++ show ff) $ -}processFlipFlopPulse pulse ff moduleAndRecipients system
-                       ConjunctionModule cn -> {-trace ("Conjunction " ++ show (isHigh pulse) ++ " " ++ moduleName ++ " " ++ show cn) $ -}processConjunctionPulse pulse cn moduleAndRecipients system
-                       BroadcasterModule bc -> {-trace ("Broadcaster " ++ show (isHigh pulse) ++ " " ++ moduleName ++ " "  ++ show bc) $ -}processBroadcasterPulse pulse bc moduleAndRecipients system
+                       FlipFlopModule ff -> processFlipFlopPulse pulse ff moduleAndRecipients system
+                       ConjunctionModule cn -> processConjunctionPulse pulse cn moduleAndRecipients system
+                       BroadcasterModule bc -> processBroadcasterPulse pulse bc moduleAndRecipients system
       newProcessedPulses = sysProcessedPulses updatedSystem ++ [pulse]
   in updatedSystem { sysProcessedPulses = newProcessedPulses }
 
@@ -188,11 +188,15 @@ countPulses pulses =
   let countLowHigh (lows, highs) pulse = if isHigh pulse then (lows, highs + 1) else (lows + 1, highs)
   in foldl' countLowHigh (0, 0) pulses
 
+showModules :: System -> String
+showModules system = show modulesAndState
+  where modulesAndRecipients = M.elems $ sysModulesAndRecipients system
+        modulesAndState = map (\x -> (marName x, marModule x)) modulesAndRecipients
+
 day20part1 = do
     contents <- readFile "day20 (data).csv"
     let initialSystem = setPresses 1000 $ readSystem $ contents
-    let finalSystem = processPresses initialSystem -- assuming initialSystem is your starting state
-    let (totalLowPulses, totalHighPulses) = countPulses $ sysProcessedPulses finalSystem
+    let systems = processPresses initialSystem -- assuming initialSystem is your starting state
     -- mapM_ print . M.keys $ sysModulesAndRecipients finalSystem
     -- putStrLn ""
     -- mapM_ print . M.elems $ sysModulesAndRecipients finalSystem
@@ -201,4 +205,4 @@ day20part1 = do
     -- putStrLn ""
     -- print finalSystem
     
-    print $ totalLowPulses*totalHighPulses
+    mapM_ (putStrLn . showModules) systems
