@@ -43,12 +43,12 @@ import Deque.Strict as D
 main = day20part1
 
 -- START ModuleSpec Parse --
-data ModuleType = FlipFlopType | ConjuctionType | BroadcasterType deriving (Show, Eq)
+data ModuleType = FlipFlopType | ConjunctionType | BroadcasterType deriving (Show, Eq)
 data ModuleSpec = ModuleSpec {moduleType :: ModuleType, moduleName :: String, moduleRecipients :: [String]} deriving (Show, Eq)
 
 readModuleType :: String -> ModuleType
 readModuleType "%" = FlipFlopType
-readModuleType "&" = ConjuctionType
+readModuleType "&" = ConjunctionType
 readModuleType _   = BroadcasterType
 
 readModuleSpec :: String -> ModuleSpec
@@ -67,12 +67,12 @@ readModuleSpec inStr = ModuleSpec moduleType name recipients
 data Pulse = Pulse {pulseRecipient :: String, isHigh :: Bool} deriving (Show, Eq)
 
 data FlipFlop = FlipFlop {ffIsOn :: Bool} deriving (Show, Eq)
-data Conjuction = Conjuction {cnLastPulseIsHighMap :: M.Map String Bool} deriving (Show, Eq)
+data Conjunction = Conjunction {cnLastPulseIsHighMap :: M.Map String Bool} deriving (Show, Eq)
 data Broadcaster = Broadcaster {bcPresses :: Int} deriving (Show, Eq)
-data Module = FlipFlopModule FlipFlop | ConjuctionModule Conjuction | BroadcasterModule Broadcaster deriving (Show, Eq)
+data Module = FlipFlopModule FlipFlop | ConjunctionModule Conjunction | BroadcasterModule Broadcaster deriving (Show, Eq)
 data ModuleAndRecipients = ModuleAndRecipients {marName :: String, marModule :: Module, marRecipients :: [String]} deriving (Show, Eq)
 
-data System = System {sysModulesAndRecipients :: M.Map String ModuleAndRecipients, sysPulses :: D.Deque Pulse, sysProcessedPulses :: [Pulse]} deriving (Show, Eq)
+data System = System {sysModulesAndRecipients :: M.Map String ModuleAndRecipients, sysPendingPulses :: D.Deque Pulse, sysProcessedPulses :: [Pulse]} deriving (Show, Eq)
 emptySystem = System mempty mempty mempty
 
 -- readSystem :: String -> System
@@ -92,15 +92,15 @@ updateSystemWithModuleSpec s m
                 
                 newModule = case moduleType m of
                     FlipFlopType -> FlipFlopModule (FlipFlop False)
-                    ConjuctionType -> ConjuctionModule (Conjuction existingSenders)
+                    ConjunctionType -> ConjunctionModule (Conjunction existingSenders)
                     BroadcasterType -> BroadcasterModule (Broadcaster 0)
                 
-                --update all existing ConjuctionType recipients
+                --update all existing ConjunctionType recipients
                 newModulesAndRecipients = M.mapWithKey updateIfConjunctionModule oldModulesAndRecipients
                 
                 updateIfConjunctionModule :: String -> ModuleAndRecipients -> ModuleAndRecipients
-                updateIfConjunctionModule recipientName m'@(ModuleAndRecipients _ (ConjuctionModule (Conjuction lastPulseIsHighMap)) _)
-                    | recipientName `elem` recipients = m' {marModule = ConjuctionModule (Conjuction (M.insert newModuleName False lastPulseIsHighMap))}
+                updateIfConjunctionModule recipientName m'@(ModuleAndRecipients _ (ConjunctionModule (Conjunction lastPulseIsHighMap)) _)
+                    | recipientName `elem` recipients = m' {marModule = ConjunctionModule (Conjunction (M.insert newModuleName False lastPulseIsHighMap))}
                     | otherwise                       = m'
                 updateIfConjunctionModule k m' = m'
 
@@ -114,31 +114,27 @@ setPresses newPresses system = system { sysModulesAndRecipients = updatedModules
       mar { marModule = BroadcasterModule (Broadcaster newPresses) }
     updateIfBroadcaster mar = mar
 
-processPulses :: System -> System
-processPulses system =
-    case getBroadcasterPressCount system of
-        0 -> system  -- No more broadcaster presses to process
-        _ -> case D.uncons (sysPulses system) of
-                Nothing -> processPulses $ decrementBroadcasterPressCount system
-                Just (pulse, remainingPulses) -> 
-                    let updatedSystem = processPulse pulse system
-                    in processPulses $ updatedSystem { sysPulses = remainingPulses }
+processPresses :: System -> System
+processPresses system
+    | pressCount == 0 = system
+    | otherwise       = processPresses $ case D.uncons (sysPendingPulses system) of
+                            Nothing
+                                -> broadcast system
+                            Just (pulse, remainingPulses)
+                                -> let updatedSystem = processPulse pulse system
+                                   in updatedSystem { sysPendingPulses = remainingPulses }
+  where broadcaster = fromJust $ M.lookup "broadcaster" (sysModulesAndRecipients system)
+        (ModuleAndRecipients _ (BroadcasterModule (Broadcaster pressCount)) _) = broadcaster
 
-getBroadcasterPressCount :: System -> Int
-getBroadcasterPressCount system =
-    case M.lookup "broadcaster" (sysModulesAndRecipients system) of
-        Just (ModuleAndRecipients _ (BroadcasterModule (Broadcaster count)) _) -> count
-        _ -> 0  -- Fallback case, should not occur if broadcaster always exists
-
-decrementBroadcasterPressCount :: System -> System
-decrementBroadcasterPressCount system =
+broadcast :: System -> System
+broadcast system =
     let modulesAndRecipients = sysModulesAndRecipients system
         updatedModulesAndRecipients = M.map updateBroadcaster modulesAndRecipients
         broadcasterRecips = maybe [] marRecipients $ M.lookup "broadcaster" modulesAndRecipients
         lowPulses = map (\recip -> Pulse { pulseRecipient = recip, isHigh = False }) broadcasterRecips
-        updatedPulses = foldl' (flip D.snoc) (sysPulses system) lowPulses
+        updatedPulses = foldl' (flip D.snoc) (sysPendingPulses system) lowPulses
         newProcessedPulses = sysProcessedPulses system ++ lowPulses
-    in system { sysModulesAndRecipients = updatedModulesAndRecipients, sysPulses = updatedPulses, sysProcessedPulses = newProcessedPulses }
+    in system { sysModulesAndRecipients = updatedModulesAndRecipients, sysPendingPulses = updatedPulses, sysProcessedPulses = newProcessedPulses }
 
   where
     updateBroadcaster mar@(ModuleAndRecipients name (BroadcasterModule (Broadcaster count)) recips) =
@@ -153,9 +149,8 @@ processPulse pulse system =
       moduleAndRecipients = fromJust $ M.lookup moduleName $ sysModulesAndRecipients system
       updatedSystem = case marModule moduleAndRecipients of
                        FlipFlopModule ff -> processFlipFlopPulse pulse ff moduleAndRecipients system
-                       ConjuctionModule cn -> processConjuctionPulse pulse cn moduleAndRecipients system
+                       ConjunctionModule cn -> processConjunctionPulse pulse cn moduleAndRecipients system
                        BroadcasterModule bc -> processBroadcasterPulse pulse bc moduleAndRecipients system
-                       -- Add cases for other module types if necessary
       newProcessedPulses = sysProcessedPulses updatedSystem ++ [pulse]
   in updatedSystem { sysProcessedPulses = newProcessedPulses }
 
@@ -165,26 +160,26 @@ processFlipFlopPulse pulse ff mar system =
     then system  -- Ignore high pulses
     else let newFfState = not $ ffIsOn ff
              newPulse = Pulse { pulseRecipient = undefined, isHigh = newFfState }
-             updatedPulses = foldl' (\acc r -> D.snoc (newPulse { pulseRecipient = r }) acc) (sysPulses system) (marRecipients mar)
+             updatedPulses = foldl' (\acc r -> D.snoc (newPulse { pulseRecipient = r }) acc) (sysPendingPulses system) (marRecipients mar)
              updatedModule = FlipFlopModule $ FlipFlop newFfState
              updatedModulesAndRecipients = M.insert (marName mar) (ModuleAndRecipients (marName mar) updatedModule (marRecipients mar)) (sysModulesAndRecipients system)
          in system { sysModulesAndRecipients = updatedModulesAndRecipients,
-                     sysPulses = updatedPulses }
+                     sysPendingPulses = updatedPulses }
 
-processConjuctionPulse :: Pulse -> Conjuction -> ModuleAndRecipients -> System -> System
-processConjuctionPulse pulse cn mar system =
+processConjunctionPulse :: Pulse -> Conjunction -> ModuleAndRecipients -> System -> System
+processConjunctionPulse pulse cn mar system =
     let updatedMap = M.insert (pulseRecipient pulse) (isHigh pulse) (cnLastPulseIsHighMap cn)
-        allHigh = all id $ M.elems updatedMap
+        allHigh = and $ M.elems updatedMap
         newPulse = Pulse { pulseRecipient = undefined, isHigh = not allHigh }
-        updatedPulses = foldl' (\acc r -> D.snoc (newPulse { pulseRecipient = r }) acc) (sysPulses system) (marRecipients mar)
-    in system { sysModulesAndRecipients = M.insert (marName mar) (ModuleAndRecipients (marName mar) (ConjuctionModule $ Conjuction updatedMap) (marRecipients mar)) (sysModulesAndRecipients system),
-                sysPulses = updatedPulses }
+        updatedPulses = foldl' (\acc r -> D.snoc (newPulse { pulseRecipient = r }) acc) (sysPendingPulses system) (marRecipients mar)
+    in system { sysModulesAndRecipients = M.insert (marName mar) (ModuleAndRecipients (marName mar) (ConjunctionModule $ Conjunction updatedMap) (marRecipients mar)) (sysModulesAndRecipients system),
+                sysPendingPulses = updatedPulses }
 
 processBroadcasterPulse :: Pulse -> Broadcaster -> ModuleAndRecipients -> System -> System
 processBroadcasterPulse pulse bc mar system =
     let newPulse = Pulse { pulseRecipient = undefined, isHigh = isHigh pulse }
-        updatedPulses = foldl' (\acc r -> D.snoc (newPulse { pulseRecipient = r }) acc) (sysPulses system) (marRecipients mar)
-    in system { sysPulses = updatedPulses }
+        updatedPulses = foldl' (\acc r -> D.snoc (newPulse { pulseRecipient = r }) acc) (sysPendingPulses system) (marRecipients mar)
+    in system { sysPendingPulses = updatedPulses }
 
 countPulses :: [Pulse] -> (Int, Int)
 countPulses pulses = 
@@ -194,11 +189,13 @@ countPulses pulses =
 day20part1 = do
     contents <- readFile "day20 (example).csv"
     let initialSystem = setPresses 1000 $ readSystem $ contents
-    let finalSystem = processPulses initialSystem -- assuming initialSystem is your starting state
+    let finalSystem = processPresses initialSystem -- assuming initialSystem is your starting state
     let (totalLowPulses, totalHighPulses) = countPulses $ sysProcessedPulses finalSystem
     mapM_ print . M.keys $ sysModulesAndRecipients finalSystem
     putStrLn ""
     mapM_ print . M.elems $ sysModulesAndRecipients finalSystem
+    putStrLn ""
+    print initialSystem
     putStrLn ""
     print finalSystem
     
