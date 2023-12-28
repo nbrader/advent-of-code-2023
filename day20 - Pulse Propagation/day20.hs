@@ -8,7 +8,7 @@
 -------------------------------------
 {-
     To build, run the following shell command in this directory:
-        stack --resolver lts-21.22 ghc --package containers-0.6.7 --package linear-1.22 -- '.\day20.hs' -O2
+        stack --resolver lts-21.22 ghc --package containers-0.6.7 --package linear-1.22 --package deque-0.4.4.1 -- '.\day20.hs' -O2
 -}
 
 ------------
@@ -120,7 +120,7 @@ processPresses system = case D.uncons (sysPendingPulses system) of
                             Nothing
                                 -> if pressCount == 0
                                     then system
-                                    else processPresses $ trace ("\n") $ broadcast system
+                                    else processPresses $ broadcast system
                             Just (pulse, remainingPulses)
                                 -> let updatedSystem = processPulse pulse (system { sysPendingPulses = remainingPulses })
                                    in processPresses $ updatedSystem
@@ -133,7 +133,7 @@ broadcast system =
         updatedModulesAndRecipients = M.map updateBroadcaster modulesAndRecipients
         lowPulse = Pulse { pulseSender = "button", pulseRecipient = "broadcaster", isHigh = False }
         newProcessedPulses = sysProcessedPulses system
-    in trace ("broadcast " ++ show system) $ system { sysModulesAndRecipients = updatedModulesAndRecipients, sysPendingPulses = F.fromList [lowPulse], sysProcessedPulses = newProcessedPulses }
+    in system { sysModulesAndRecipients = updatedModulesAndRecipients, sysPendingPulses = F.fromList [lowPulse], sysProcessedPulses = newProcessedPulses }
 
   where
     updateBroadcaster mar@(ModuleAndRecipients name (BroadcasterModule (Broadcaster count)) recips) =
@@ -150,9 +150,9 @@ processPulse pulse system =
             Nothing -> system
             Just moduleAndRecipients ->
                       case marModule moduleAndRecipients of
-                       FlipFlopModule ff -> trace ("FlipFlop " ++ show (isHigh pulse) ++ " " ++ moduleName ++ " " ++ show ff) $ processFlipFlopPulse pulse ff moduleAndRecipients system
-                       ConjunctionModule cn -> trace ("Conjunction " ++ show (isHigh pulse) ++ " " ++ moduleName ++ " " ++ show cn) $ processConjunctionPulse pulse cn moduleAndRecipients system
-                       BroadcasterModule bc -> trace ("Broadcaster " ++ show (isHigh pulse) ++ " " ++ moduleName ++ " "  ++ show bc) $ processBroadcasterPulse pulse bc moduleAndRecipients system
+                       FlipFlopModule ff -> {-trace ("FlipFlop " ++ show (isHigh pulse) ++ " " ++ moduleName ++ " " ++ show ff) $ -}processFlipFlopPulse pulse ff moduleAndRecipients system
+                       ConjunctionModule cn -> {-trace ("Conjunction " ++ show (isHigh pulse) ++ " " ++ moduleName ++ " " ++ show cn) $ -}processConjunctionPulse pulse cn moduleAndRecipients system
+                       BroadcasterModule bc -> {-trace ("Broadcaster " ++ show (isHigh pulse) ++ " " ++ moduleName ++ " "  ++ show bc) $ -}processBroadcasterPulse pulse bc moduleAndRecipients system
       newProcessedPulses = sysProcessedPulses updatedSystem ++ [pulse]
   in updatedSystem { sysProcessedPulses = newProcessedPulses }
 
@@ -189,8 +189,8 @@ countPulses pulses =
   in foldl' countLowHigh (0, 0) pulses
 
 day20part1 = do
-    contents <- readFile "day20 (example).csv"
-    let initialSystem = setPresses 1 $ readSystem $ contents
+    contents <- readFile "day20 (data).csv"
+    let initialSystem = setPresses 1000 $ readSystem $ contents
     let finalSystem = processPresses initialSystem -- assuming initialSystem is your starting state
     let (totalLowPulses, totalHighPulses) = countPulses $ sysProcessedPulses finalSystem
     -- mapM_ print . M.keys $ sysModulesAndRecipients finalSystem
@@ -201,7 +201,4 @@ day20part1 = do
     -- putStrLn ""
     -- print finalSystem
     
-    print totalLowPulses
-    print totalHighPulses
-    
-    mapM_ print $ sysProcessedPulses finalSystem
+    print $ totalLowPulses*totalHighPulses
