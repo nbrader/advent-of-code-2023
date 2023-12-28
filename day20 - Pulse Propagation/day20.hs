@@ -35,6 +35,7 @@ import Data.Ord
 import Data.Function
 import Data.Tuple
 import Deque.Strict as D
+import GHC.Exts as F
 
 
 -------------
@@ -115,14 +116,14 @@ setPresses newPresses system = system { sysModulesAndRecipients = updatedModules
     updateIfBroadcaster mar = mar
 
 processPresses :: System -> System
-processPresses system
-    | pressCount == 0 = system
-    | otherwise       = processPresses $ case D.uncons (sysPendingPulses system) of
+processPresses system = case D.uncons (sysPendingPulses system) of
                             Nothing
-                                -> trace ("\n") $ broadcast system
+                                -> if pressCount == 0
+                                    then system
+                                    else processPresses $ trace ("\n") $ broadcast system
                             Just (pulse, remainingPulses)
                                 -> let updatedSystem = processPulse pulse (system { sysPendingPulses = remainingPulses })
-                                   in updatedSystem
+                                   in processPresses $ updatedSystem
   where broadcaster = fromJust $ M.lookup "broadcaster" (sysModulesAndRecipients system)
         (ModuleAndRecipients _ (BroadcasterModule (Broadcaster pressCount)) _) = broadcaster
 
@@ -130,11 +131,9 @@ broadcast :: System -> System
 broadcast system =
     let modulesAndRecipients = sysModulesAndRecipients system
         updatedModulesAndRecipients = M.map updateBroadcaster modulesAndRecipients
-        broadcasterRecips = maybe [] marRecipients $ M.lookup "broadcaster" modulesAndRecipients
-        lowPulses = map (\recip -> Pulse { pulseSender = "broadcaster", pulseRecipient = recip, isHigh = False }) broadcasterRecips
-        updatedPulses = foldl' (flip D.snoc) (sysPendingPulses system) lowPulses
-        newProcessedPulses = sysProcessedPulses system ++ lowPulses
-    in system { sysModulesAndRecipients = updatedModulesAndRecipients, sysPendingPulses = updatedPulses, sysProcessedPulses = newProcessedPulses }
+        lowPulse = Pulse { pulseSender = "button", pulseRecipient = "broadcaster", isHigh = False }
+        newProcessedPulses = sysProcessedPulses system
+    in trace ("broadcast " ++ show system) $ system { sysModulesAndRecipients = updatedModulesAndRecipients, sysPendingPulses = F.fromList [lowPulse], sysProcessedPulses = newProcessedPulses }
 
   where
     updateBroadcaster mar@(ModuleAndRecipients name (BroadcasterModule (Broadcaster count)) recips) =
@@ -146,8 +145,11 @@ broadcast system =
 processPulse :: Pulse -> System -> System
 processPulse pulse system =
   let moduleName = pulseRecipient pulse
-      moduleAndRecipients = fromJust $ M.lookup moduleName $ sysModulesAndRecipients system
-      updatedSystem = case marModule moduleAndRecipients of
+      maybeModuleAndRecipients = M.lookup moduleName $ sysModulesAndRecipients system
+      updatedSystem = case maybeModuleAndRecipients of
+            Nothing -> system
+            Just moduleAndRecipients ->
+                      case marModule moduleAndRecipients of
                        FlipFlopModule ff -> trace ("FlipFlop " ++ show (isHigh pulse) ++ " " ++ moduleName ++ " " ++ show ff) $ processFlipFlopPulse pulse ff moduleAndRecipients system
                        ConjunctionModule cn -> trace ("Conjunction " ++ show (isHigh pulse) ++ " " ++ moduleName ++ " " ++ show cn) $ processConjunctionPulse pulse cn moduleAndRecipients system
                        BroadcasterModule bc -> trace ("Broadcaster " ++ show (isHigh pulse) ++ " " ++ moduleName ++ " "  ++ show bc) $ processBroadcasterPulse pulse bc moduleAndRecipients system
@@ -188,16 +190,18 @@ countPulses pulses =
 
 day20part1 = do
     contents <- readFile "day20 (example).csv"
-    let initialSystem = setPresses 1000 $ readSystem $ contents
+    let initialSystem = setPresses 1 $ readSystem $ contents
     let finalSystem = processPresses initialSystem -- assuming initialSystem is your starting state
     let (totalLowPulses, totalHighPulses) = countPulses $ sysProcessedPulses finalSystem
-    mapM_ print . M.keys $ sysModulesAndRecipients finalSystem
-    putStrLn ""
-    mapM_ print . M.elems $ sysModulesAndRecipients finalSystem
-    putStrLn ""
-    print initialSystem
-    putStrLn ""
-    print finalSystem
+    -- mapM_ print . M.keys $ sysModulesAndRecipients finalSystem
+    -- putStrLn ""
+    -- mapM_ print . M.elems $ sysModulesAndRecipients finalSystem
+    -- putStrLn ""
+    -- print initialSystem
+    -- putStrLn ""
+    -- print finalSystem
     
     print totalLowPulses
     print totalHighPulses
+    
+    mapM_ print $ sysProcessedPulses finalSystem
