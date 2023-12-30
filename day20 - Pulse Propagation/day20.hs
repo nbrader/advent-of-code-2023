@@ -215,3 +215,18 @@ showAsTGF moduleSpecs = unlines $ concat [nodeRows, ["#"], edgeRows]
   where nodeRows, edgeRows :: [String]
         nodeRows =          map (\spec -> moduleName spec ++ " " ++ show (moduleType spec) ++ " " ++ moduleName spec) $ moduleSpecs
         edgeRows = concat $ map (\spec -> map unwords $ (sequence [([moduleName spec]), (moduleRecipients spec)])) $ moduleSpecs
+
+
+bitMaskA   = sum $ zipWith (\i c -> c*2^i) [0..] [1,1,1,1,0,0,1,0,1,1,1,1]
+incrementA = sum $ zipWith (\i c -> c*2^i) [0..] [1,0,0,0,1,1,0,1,0,0,0,0] -- This is just resetting
+
+bitMaskB   = sum $ zipWith (\i c -> c*2^i) [0..] [1,0,0,0,1,1,0,1,0,1,1,1]
+incrementB = sum $ zipWith (\i c -> c*2^i) [0..] [1,1,1,1,0,0,1,0,1,0,0,0] -- This is just resetting
+
+bitMaskC   = sum $ zipWith (\i c -> c*2^i) [0..] [1,0,1,0,1,0,1,1,0,1,1,1]
+incrementC = sum $ zipWith (\i c -> c*2^i) [0..] [1,1,0,1,0,1,0,0,1,0,0,0] -- This is just resetting
+
+bitMaskD   = sum $ zipWith (\i c -> c*2^i) [0..] [1,1,1,1,0,1,1,1,1,1,1,1]
+incrementD = sum $ zipWith (\i c -> c*2^i) [0..] [1,0,0,0,1,0,0,0,0,0,0,0] -- This is just resetting
+
+day20part2 = foldr lcm 1 [bitMaskA,bitMaskB,bitMaskC,bitMaskD]
