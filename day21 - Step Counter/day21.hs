@@ -48,7 +48,7 @@ import Data.Order
 main = day21part1
 
 
--- Each obj has a shape of Points (obj-units) is encoded as Integer.
+-- Each obj has a shape of Points encoded as Integer.
 type SinglePoint = Integer
 type Points = Integer
 
@@ -59,6 +59,14 @@ hasPoint = undefined
 
 readWorld :: String -> World
 readWorld = undefined
+
+readChar2Ds :: [Char] -> [((Int,Int), Char)]
+readChar2Ds inStr = do
+    let rows = lines inStr
+    (y,row)  <- zip [0..] rows
+    (x,char) <- zip [0..] row
+    
+    return ((x, y), char)
 
 showWorld :: Int -> (Char -> Char -> Ordering) -> World -> String
 showWorld height charZOrder world = undefined
