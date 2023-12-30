@@ -194,7 +194,7 @@ showModules system = show modulesAndState
         modulesAndState = map (\x -> (marName x, marModule x)) modulesAndRecipients
 
 day20part1 = do
-    contents <- readFile "day20 (data).csv"
+    contents <- readFile "day20 (example 2).csv"
     let initialSystem = setPresses 1000 $ readSystem $ contents
     let systems = processPresses initialSystem -- assuming initialSystem is your starting state
     -- mapM_ print . M.keys $ sysModulesAndRecipients finalSystem
@@ -205,4 +205,13 @@ day20part1 = do
     -- putStrLn ""
     -- print finalSystem
     
-    mapM_ (putStrLn . showModules) systems
+    -- mapM_ (putStrLn . showModules) systems
+    
+    let modulesSpecs = map readModuleSpec . lines $ contents
+    putStrLn . showAsTGF $ modulesSpecs
+
+showAsTGF :: [ModuleSpec] -> String
+showAsTGF moduleSpecs = unlines $ concat [nodeRows, ["#"], edgeRows]
+  where nodeRows, edgeRows :: [String]
+        nodeRows =          map (\spec -> moduleName spec ++ " " ++ show (moduleType spec) ++ " " ++ moduleName spec) $ moduleSpecs
+        edgeRows = concat $ map (\spec -> map unwords $ (sequence [([moduleName spec]), (moduleRecipients spec)])) $ moduleSpecs

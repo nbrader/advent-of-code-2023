@@ -1,0 +1,12 @@
+broadcaster BroadcasterType broadcaster
+a FlipFlopType a
+inv ConjunctionType inv
+b FlipFlopType b
+con ConjunctionType con
+#
+broadcaster a
+a inv
+a con
+inv b
+b con
+con output

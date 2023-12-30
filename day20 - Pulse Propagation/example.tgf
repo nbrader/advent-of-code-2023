@@ -1,0 +1,13 @@
+broadcaster BroadcasterType broadcaster
+a FlipFlopType a
+b FlipFlopType b
+c FlipFlopType c
+inv ConjunctionType inv
+#
+broadcaster a
+broadcaster b
+broadcaster c
+a b
+b c
+c inv
+inv a
