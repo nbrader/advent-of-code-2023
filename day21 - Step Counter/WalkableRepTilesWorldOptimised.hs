@@ -7,9 +7,11 @@ module WalkableRepTilesWorldOptimised (WalkableRepTilesWorldOptimised(WalkableRe
 -- Imports --
 -------------
 import Data.List (findIndex)
-import qualified Data.Map as M
+import qualified Data.Set as S
 import Data.Maybe (fromJust)
 import Data.Ord
+import Data.Bits
+import Control.Monad (guard)
 
 import Layer ( SingularPoint
              , Layer
@@ -26,20 +28,7 @@ import Layer ( SingularPoint
              , allDirs )
 
 import World as W
-            ( World(..)
-            , emptyWorld
-            , readWorld
-            , showWorld
-            , printWorld
-            , combineTwoWorlds
-            , combineWorlds
-            , hasPoint
-            , moveLayerInWorld
-            , movePointInWorld
-            , cutLayerWithLayer
-            , setPoint
-            , insertLayerAtPoint
-            , isOverlappingLayers )
+            ( World )
 
 import WalkableWorld as Class
 
@@ -47,27 +36,80 @@ import WalkableBoundedWorld as B
                             ( charOrder
                             , addRocksToRightAndTop )
 
-data WalkableRepTilesWorldOptimised = WalkableRepTilesWorldOptimised {asWorld :: World, asOriginalWorld :: World}
+data WalkableRepTilesWorldOptimised
+    = WalkableRepTilesWorldOptimised
+            { worldBGChar :: Char
+            , worldWalls :: S.Set (Int,Int)
+            , worldStart :: (Int,Int)
+            , worldPrevVisited :: S.Set (Int,Int)
+            , worldPrevPrevVisited :: S.Set (Int,Int)
+            , worldCountedOddSteps :: Integer
+            , worldCountedEvenSteps :: Integer
+            , worldStepCount :: Integer
+            , worldWidth :: Int
+            , worldHeight :: Int } deriving (Show)
 
 instance WalkableWorld WalkableRepTilesWorldOptimised where
     -- Assumes all rows have equal length
-    readWorld :: String -> (Int, WalkableRepTilesWorldOptimised)
-    readWorld = undefined -- fmap WalkableRepTilesWorldOptimised . W.readWorld '.' ['S'] . addRocksToRightAndTop
+    readWorld :: String -> (Int,WalkableRepTilesWorldOptimised)
+    readWorld inStr
+        = ( height
+          , WalkableRepTilesWorldOptimised
+                { worldBGChar = bgChar
+                , worldWalls = S.fromList . map snd . filter ((==wallChar) . fst) $ char2Ds
+                , worldStart = head       . map snd . filter ((==startChar)  . fst) $ char2Ds
+                , worldPrevVisited = S.empty
+                , worldPrevPrevVisited = S.empty
+                , worldCountedOddSteps = 0
+                , worldCountedEvenSteps = 0
+                , worldStepCount = 0
+                , worldWidth = width
+                , worldHeight = height } )
+      
+      where rows = lines inStr
+            height = length rows
+            width
+              | height == 0 = 0
+              | otherwise   = length $ head rows
+            char2Ds = readChar2DsFromRows rows
+            
+            readChar2DsFromRows :: [String] -> [(Char, (Int,Int))]
+            readChar2DsFromRows rows = do
+                (y',row) <- zip [0..] rows
+                (x,char) <- zip [0..] row
+                
+                let y = height - 1 - y'
+                
+                return (char, (x, y))
 
     showWorld :: Int -> WalkableRepTilesWorldOptimised -> String
-    showWorld height w = undefined -- W.showWorld height charOrder (Class.asWorld w)
+    showWorld height w = show (worldPrevVisited w) -- W.showWorld height charOrder (Class.asWorld w)
 
     removeForbidden :: WalkableRepTilesWorldOptimised -> WalkableRepTilesWorldOptimised
-    removeForbidden w = undefined -- WalkableRepTilesWorldOptimised $ cutLayerWithLayer 'O' '#' (Class.asWorld w)
+    removeForbidden w = undefined
 
     progressByAStep :: WalkableRepTilesWorldOptimised -> WalkableRepTilesWorldOptimised
-    progressByAStep w = undefined -- removeForbidden . WalkableRepTilesWorldOptimised $ combineWorlds $ map (\dir -> moveLayerInWorld 'O' dir (Class.asWorld w)) allDirs
+    progressByAStep w = w { worldPrevVisited = newVisited
+                          , worldPrevPrevVisited = worldPrevVisited w
+                          , worldCountedOddSteps  = if not evenStep then worldCountedOddSteps w + numOfNewVisited else worldCountedOddSteps w
+                          , worldCountedEvenSteps = if evenStep     then worldCountedOddSteps w + numOfNewVisited else worldCountedOddSteps w
+                          , worldStepCount = worldStepCount w + 1 } -- WalkableRepTilesWorldOptimised $ combineWorlds $ map (\dir -> moveLayerInWorld 'O' dir (Class.asWorld w)) allDirs
+      where newVisitedIgnoringWalls = S.unions $ map (\(dx,dy) -> S.map (\(x,y) -> (x+dx,y+dy)) (worldPrevVisited w)) allDirs
+            newVisited = S.filter (\(x,y) -> let normalizedPosition = (x `mod` worldWidth w, y `mod` worldHeight w) in not (normalizedPosition `S.member` worldWalls w)) . S.filter (not . (`S.member` worldPrevPrevVisited w)) $ newVisitedIgnoringWalls
+            numOfNewVisited = toInteger $ S.size newVisited
+            newStepCount = worldStepCount w + 1
+            evenStep = worldStepCount w `mod` 2 == 0
 
     setOAtS :: WalkableRepTilesWorldOptimised -> WalkableRepTilesWorldOptimised
-    setOAtS = undefined -- WalkableRepTilesWorldOptimised . fromJust . insertLayerAtPoint 'O' 'S' . Class.asWorld
+    setOAtS w = w {worldPrevVisited = S.singleton (worldStart w), worldPrevPrevVisited = S.empty, worldCountedOddSteps = 1, worldCountedEvenSteps = 0}
     
     asWorld :: WalkableRepTilesWorldOptimised -> W.World
-    asWorld = undefined -- WalkableRepTilesWorldOptimised.asWorld
+    asWorld = undefined -- WalkableBoundedWorldOptimised.asWorld
     
     oCount :: WalkableRepTilesWorldOptimised -> Integer
-    oCount = undefined -- popCount . fromJust . M.lookup 'O' . worldLayers . Class.asWorld
+    oCount = worldCountedOddSteps
+
+bgChar = '.'
+startChar = 'S'
+wallChar = '#'
+recentVisitChar = 'O'

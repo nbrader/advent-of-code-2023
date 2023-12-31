@@ -55,7 +55,7 @@ main = day21part2
 
 -- Main
 day21part1 = do
-    contents <- readFile "day21 (example).csv"
+    contents <- readFile "day21 (data).csv"
     let (height, world) = (readWorld :: String -> (Int,WalkableBoundedWorldOptimised)) contents
     let worldBeforeStep = setOAtS world
     let futureWorlds = iterate progressByAStep worldBeforeStep
@@ -68,10 +68,10 @@ duplicateWorldNxNAsString n inStr = unlines . concat . replicate n . map (concat
 
 -- Instead of using any of the data types so far developed, just keep track of every odd number of positions added and the last two added sets of positions and then expand out in every direction not included in the oldest set of positions or overlapping a rock after being brought to the original rock layout positions.
 day21part2 = do
-    contents <- readFile "day21 (example).csv"
+    contents <- readFile "day21 (data).csv"
     let (height, world) = (readWorld :: String -> (Int,WalkableRepTilesWorldOptimised)) contents
     let worldBeforeStep = setOAtS world
-    let futureWorlds = iterate progressByAStep worldBeforeStep
+    let futureWorlds = iterate' progressByAStep worldBeforeStep
     -- print world
     -- mapM_ (printWorld height) (take 26501365 futureWorlds)
     print . oCount . (!!26501365) $ futureWorlds

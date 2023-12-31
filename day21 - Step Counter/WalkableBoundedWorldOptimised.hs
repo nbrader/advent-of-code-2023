@@ -47,6 +47,7 @@ data WalkableBoundedWorldOptimised
             , worldPrevPrevVisited :: S.Set (Int,Int)
             , worldCountedOddSteps :: Integer
             , worldCountedEvenSteps :: Integer
+            , worldStepCount :: Integer
             , worldWidth :: Int } deriving (Show)
 
 instance WalkableWorld WalkableBoundedWorldOptimised where
@@ -56,12 +57,13 @@ instance WalkableWorld WalkableBoundedWorldOptimised where
         = ( height
           , WalkableBoundedWorldOptimised
                 { worldBGChar = bgChar
-                , worldWalls = S.fromList . map snd . filter ((==startChar) . fst) $ char2Ds
-                , worldStart = head       . map snd . filter ((==wallChar)  . fst) $ char2Ds
+                , worldWalls = S.fromList . map snd . filter ((==wallChar) . fst) $ char2Ds
+                , worldStart = head       . map snd . filter ((==startChar)  . fst) $ char2Ds
                 , worldPrevVisited = S.empty
                 , worldPrevPrevVisited = S.empty
                 , worldCountedOddSteps = 0
                 , worldCountedEvenSteps = 0
+                , worldStepCount = 0
                 , worldWidth = width } )
       
       where boundedInStr = boundWorldAsString inStr
@@ -82,16 +84,26 @@ instance WalkableWorld WalkableBoundedWorldOptimised where
                 return (char, (x, y))
 
     showWorld :: Int -> WalkableBoundedWorldOptimised -> String
-    showWorld height w = undefined -- W.showWorld height charOrder (Class.asWorld w)
+    showWorld height w = show (worldPrevVisited w) -- W.showWorld height charOrder (Class.asWorld w)
 
     removeForbidden :: WalkableBoundedWorldOptimised -> WalkableBoundedWorldOptimised
-    removeForbidden w = undefined -- WalkableBoundedWorldOptimised $ cutLayerWithLayer 'O' '#' (Class.asWorld w)
+    removeForbidden w = undefined
 
     progressByAStep :: WalkableBoundedWorldOptimised -> WalkableBoundedWorldOptimised
-    progressByAStep w = undefined -- removeForbidden . WalkableBoundedWorldOptimised $ combineWorlds $ map (\dir -> moveLayerInWorld 'O' dir (Class.asWorld w)) allDirs
+    progressByAStep w = w { worldPrevVisited = newVisited
+                          , worldPrevPrevVisited = worldPrevVisited w
+                          , worldCountedOddSteps  = if not evenStep then worldCountedOddSteps w + numOfNewVisited else worldCountedOddSteps w
+                          , worldCountedEvenSteps = if evenStep     then worldCountedOddSteps w + numOfNewVisited else worldCountedOddSteps w
+                          , worldStepCount = worldStepCount w + 1
+                          , worldWidth = undefined } -- WalkableBoundedWorldOptimised $ combineWorlds $ map (\dir -> moveLayerInWorld 'O' dir (Class.asWorld w)) allDirs
+      where newVisitedIgnoringWalls = S.unions $ map (\(dx,dy) -> S.map (\(x,y) -> (x+dx,y+dy)) (worldPrevVisited w)) allDirs
+            newVisited = S.filter (not . (`S.member` worldWalls w)) . S.filter (not . (`S.member` worldPrevPrevVisited w)) $ newVisitedIgnoringWalls
+            numOfNewVisited = toInteger $ S.size newVisited
+            newStepCount = worldStepCount w + 1
+            evenStep = worldStepCount w `mod` 2 == 0
 
     setOAtS :: WalkableBoundedWorldOptimised -> WalkableBoundedWorldOptimised
-    setOAtS w = w {worldPrevVisited = S.singleton (worldStart w)}
+    setOAtS w = w {worldPrevVisited = S.singleton (worldStart w), worldPrevPrevVisited = S.empty, worldCountedOddSteps = 1, worldCountedEvenSteps = 0}
     
     asWorld :: WalkableBoundedWorldOptimised -> W.World
     asWorld = undefined -- WalkableBoundedWorldOptimised.asWorld
