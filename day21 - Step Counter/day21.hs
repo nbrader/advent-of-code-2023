@@ -182,6 +182,15 @@ moveLayer :: Char -> (Int,Int) -> World -> World
 moveLayer c (dx,dy) w = w {worldLayers = M.update (\pts -> Just $ movePoints width (dx,dy) pts) c (worldLayers w)}
   where width = worldWidth w
 
+cutLayerWithLayer :: Char -> Char -> World -> World
+cutLayerWithLayer targetChar cuttingChar w
+    |   targetChar  `M.member` worldLayers w
+     && cuttingChar `M.member` worldLayers w = w {worldLayers = M.insert targetChar newLayer (worldLayers w)}
+    | otherwise = w
+  where targetLayer  = fromJust $ M.lookup targetChar  (worldLayers w)
+        cuttingLayer = fromJust $ M.lookup cuttingChar (worldLayers w)
+        newLayer = targetLayer `diff` cuttingLayer
+
 setPoint :: Char -> (Int,Int) -> World -> World
 setPoint c (x,y) w = w {worldPoints = M.insert c (x,y) (worldPoints w)}
 
@@ -213,6 +222,9 @@ isOverlappingLayers c1 c2 w
 -- https://nux-pc/svn/Nux-SVN/My Programming/Scratchings/Advent of Code 2022/day17 (bits).hs/?r=1569
 isOverlapping :: Points -> Points -> Bool
 isOverlapping ps1 ps2 = (ps1 .&. ps2) /= zeroBits
+
+diff :: Points -> Points -> Points
+diff ps1 ps2 = (ps1 .&. complement ps2)
 
 
 
@@ -335,12 +347,29 @@ charOrder c1 c2 = comparing specialRank c1 c2 <> compare c1 c2
 addRocksToRightAndTop :: String -> String
 addRocksToRightAndTop inStr = unlines . (\rows -> map (const '#') (head rows) : rows) . map (++"#") . lines $ inStr
 
+removeForbidden :: World -> World
+removeForbidden w = cutLayerWithLayer 'O' '#' w
+
+progressByAStep :: World -> World
+progressByAStep w = removeForbidden $ combineWorlds $ map (\dir -> moveLayer 'O' dir w) allDirs
+
 -- Main
 day21part1 = do
+    contents <- readFile "day21 (data).csv"
+    let (width, world) = readWorld '.' ['S'] (addRocksToRightAndTop contents)
+    let worldBeforeStep = fromJust $ insertLayerAtPoint 'O' 'S' world
+    let futureWorlds = iterate progressByAStep worldBeforeStep
+    -- print width
+    -- print world
+    -- mapM_ (printWorld 12 charOrder) (take 7 futureWorlds)
+    print . popCount . fromJust . M.lookup 'O' . worldLayers . (!!64) $ futureWorlds
+
+day21part2 = do
     contents <- readFile "day21 (example).csv"
     let (width, world) = readWorld '.' ['S'] (addRocksToRightAndTop contents)
-    let worldAfter1Step = fromJust $ insertLayerAtPoint 'O' 'S' world
-    let worldsAfter2Steps = map (\dir -> moveLayer 'O' dir worldAfter1Step) allDirs
-    print width
-    print world
-    printWorld 12 charOrder (combineWorlds worldsAfter2Steps)
+    let worldBeforeStep = fromJust $ insertLayerAtPoint 'O' 'S' world
+    let futureWorlds = iterate progressByAStep worldBeforeStep
+    -- print width
+    -- print world
+    -- mapM_ (printWorld 12 charOrder) (take 7 futureWorlds)
+    print . popCount . fromJust . M.lookup 'O' . worldLayers . (!!26501365) $ futureWorlds
