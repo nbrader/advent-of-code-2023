@@ -24,7 +24,7 @@
 -------------
 -- Imports --
 -------------
-import Data.List (foldl', nub, sort, sortBy, groupBy, delete, find, transpose)
+import Data.List (foldl', nub, sort, sortBy, groupBy, delete, find, transpose, findIndex)
 import Data.List.Split (splitOn, chunksOf)
 import qualified Data.Map as M
 import Data.Maybe (fromJust, maybeToList, catMaybes, fromMaybe)
@@ -57,7 +57,7 @@ data World
     = World { worldBG :: Char
             , worldLayers :: M.Map Char Points
             , worldPoints :: M.Map Char SingularPoint
-            , worldWidth :: Int }
+            , worldWidth :: Int } deriving (Show)
 
 emptyWorld :: Char -> Int -> World
 emptyWorld bgChar width = World bgChar mempty mempty width
@@ -68,7 +68,7 @@ readWorld :: Char -> [Char] -> String -> (Int,World)
 readWorld bgChar singularChars inStr
     = ( height
       , World { worldBG = bgChar,
-                worldLayers = mempty,
+                worldLayers = foldr addToLayer M.empty char2Ds,
                 worldPoints = singularPoints,
                 worldWidth = width } )
        
@@ -77,20 +77,28 @@ readWorld bgChar singularChars inStr
         width
           | height == 0 = 0
           | otherwise   = length $ head rows
-        char2Ds = concat $ map readChar2Ds rows
+        char2Ds = readChar2DsFromRows rows
         singularPoints = M.fromList . catMaybes
                                     . map (\c -> find (\(c', (x,y)) -> c' == c) char2Ds)
                                     $ singularChars
         
-        readChar2Ds :: [Char] -> [(Char, (Int,Int))]
-        readChar2Ds inStr = do
-            let rows = lines inStr
-            (y,row)  <- zip [0..] rows
+        readChar2DsFromRows :: [String] -> [(Char, (Int,Int))]
+        readChar2DsFromRows rows = do
+            (y',row) <- zip [0..] rows
             (x,char) <- zip [0..] row
+            
+            let y = height - 1 - y'
             
             guard $ char /= bgChar
             
             return (char, (x, y))
+
+        addToLayer :: (Char, (Int, Int)) -> M.Map Char Points -> M.Map Char Points
+        addToLayer (char, (x, y)) = M.alter (setBitInLayer (x, y)) char
+
+        setBitInLayer :: (Int, Int) -> Maybe Points -> Maybe Points
+        setBitInLayer (x, y) maybePoints = Just $ setBit (fromMaybe 0 maybePoints) (y * width + x)
+
 
 showWorld :: Int -> (Char -> Char -> Ordering) -> World -> String
 showWorld height charZOrder world = unlines . reverse . take height . chunksOf width . map (fromMaybe bgChar) $ listOfMaybeCharsFromLayersAndPoints
@@ -132,7 +140,7 @@ exampleWorld3 :: World
 exampleWorld3 = moveLayer 'U' (-1,-1) $ exampleWorld2
 
 exampleWorld4 :: World
-exampleWorld4 = exampleWorld1 `combineWorlds` exampleWorld2
+exampleWorld4 = exampleWorld1 `combineTwoWorlds` exampleWorld2
 
 examplePrint1 = printWorld 10 (comparing id) exampleWorld1
 examplePrint2 = printWorld 10 (comparing id) exampleWorld2
@@ -142,8 +150,8 @@ examplePrint4 = printWorld 10 (comparing id) exampleWorld4
 
 -- Assumes worlds are same size
 -- Left-biased such that the background character and any singular points they share are taken from the left
-combineWorlds :: World -> World -> World
-combineWorlds w1 w2
+combineTwoWorlds :: World -> World -> World
+combineTwoWorlds w1 w2
     = w1 { worldLayers = M.unionWith combineLayers (worldLayers w1) (worldLayers w2),
            worldPoints = M.unionWith combinePoints (worldPoints w1) (worldPoints w2) }
   where combineLayers :: Points -> Points -> Points
@@ -151,6 +159,9 @@ combineWorlds w1 w2
         
         combinePoints :: SingularPoint -> SingularPoint -> SingularPoint
         combinePoints point1 _ = point1
+
+combineWorlds :: [World] -> World
+combineWorlds = foldr1 combineTwoWorlds
 
 hasPoint :: Char -> SingularPoint -> World -> Bool
 hasPoint char point world = inSingularPoints || inLayers
@@ -168,11 +179,24 @@ pointToIndex :: Int -> SingularPoint -> Int
 pointToIndex width (x, y) = y * width + x
 
 moveLayer :: Char -> (Int,Int) -> World -> World
-moveLayer c (dx,dy) w = w {worldLayers = M.update (\pts -> Just $ pts `shift` (dx + width*dy)) c (worldLayers w)}
+moveLayer c (dx,dy) w = w {worldLayers = M.update (\pts -> Just $ movePoints width (dx,dy) pts) c (worldLayers w)}
   where width = worldWidth w
 
 setPoint :: Char -> (Int,Int) -> World -> World
 setPoint c (x,y) w = w {worldPoints = M.insert c (x,y) (worldPoints w)}
+
+insertLayerAtPoint :: Char -> Char -> World -> Maybe World
+insertLayerAtPoint layerChar pointChar w = do
+    point <- M.lookup pointChar (worldPoints w)
+    let newLayer = pointToPoints width point
+    return $ w {worldLayers = M.insert layerChar newLayer (worldLayers w)}
+  where width = worldWidth w
+
+pointToPoints :: Int -> SingularPoint -> Points
+pointToPoints width (x,y) = movePoints width (x,y) 1
+
+movePoints :: Int -> (Int,Int) -> Points -> Points
+movePoints width (dx,dy) pts = pts `shift` pointToIndex width (dx,dy)
 
 isOverlappingLayers :: Char -> Char -> World -> Bool
 isOverlappingLayers c1 c2 w
@@ -189,115 +213,6 @@ isOverlappingLayers c1 c2 w
 -- https://nux-pc/svn/Nux-SVN/My Programming/Scratchings/Advent of Code 2022/day17 (bits).hs/?r=1569
 isOverlapping :: Points -> Points -> Bool
 isOverlapping ps1 ps2 = (ps1 .&. ps2) /= zeroBits
-
--- data Obj = Obj {
-    -- objPoints  :: !Points,
-    -- objRect :: !Rect } deriving (Show, Eq, Ord, Generic)
-
--- data Rect = Rect {
-    -- rectLeft   :: !Int,
-    -- rectBottom :: !Int,
-    -- rectWidth  :: !Int,
-    -- rectHeight :: !Int } deriving (Show, Eq, Ord, Generic)
-
--- rectRight r = rectLeft   r + rectWidth r
--- rectTop   r = rectBottom r + rectHeight r
-
--- type WorldStart = (Points, Obj, JetMove)
-
--- data World = World {
-    -- worldNonCulledPoints   :: !Points,
-    -- worldNextObjs         :: [Obj],
-    -- worldFallingObj       :: !Obj,
-    -- worldCullingHeight    :: !Int,
-    -- worldHeightAboveCull  :: !Int,
-    -- worldObjsStopped      :: !Int,
-    -- worldPrevWorldsObjsStoppedAndCullingHeight :: Map WorldStart (Int,Int)} deriving (Show)
-
--- -- Every 8 bits of the integer represents a horizontal cross-section of the obj in the world as follows:
--- -- 
--- --       -- Least significant bit
--- --      |
--- --      V 
--- --      00111000 00001000 00001000
--- --
--- --  represents
--- --  
--- --      Wall    Wall   <-- Every bit position that's a multiple of 8 is where the walls of the world are (the right wall is just the left wall on the previous line)
--- --      |       |           The first bit (from least significant) is the wall and the next 7 bits are the mkPoints occupied by the falling obj within that row of possible places
--- --      |       |
--- --      V       V
--- --      |       | <-- The remaining rows are all zeroes as impled by the Integer type
--- --      |   #   | <-- The next  row up (from left) is the third  8 bits
--- --      |   #   | <-- The next  row up (from left) is the second 8 bits
--- --      | ###   | <-- The first row up (from left) is the first  8 bits
-
-
--- -- isOverlapping n n
--- -- time:  O(n) (approx.) [0 < n < 10000000000, 0 < secs < 7.97]
--- -- space: O(n) (approx.) [0 < n < 10000000000, 0 < bytes < 30000141704]
--- -- https://nux-pc/svn/Nux-SVN/My Programming/Scratchings/Advent of Code 2022/day17 (bits).hs/?r=1569
--- isOverlapping :: Points -> Points -> Bool
--- isOverlapping ps1 ps2 = (ps1 .&. ps2) /= zeroBits
-
--- isOverlappingWorld :: Obj -> World -> Bool
--- isOverlappingWorld r w = objRect r `isOverlappingHeight` (worldHeightAboveCull w) && objPoints r `isOverlapping` worldNonCulledPoints w
-
--- isOverlappingHeight :: Rect -> Int -> Bool
--- isOverlappingHeight (Rect _ b _ _) h = b <= h
-
--- union :: Points -> Points -> Points
--- union ps1 ps2 = ps1 .|. ps2
-
--- intersection :: Points -> Points -> Points
--- intersection ps1 ps2 = ps1 .&. ps2
-
--- inWall :: Obj -> Bool
--- inWall (Obj _ r) = rectLeft r < 1 || rectRight r > 7
-
--- onFloor :: Obj -> Bool
--- onFloor (Obj _ (Rect l b w h)) = b == 0
-
--- floorPoints = foldl' (.|.) zeroBits $ map mkPoint [(x,0) | x <- [0..7]]
-
--- move :: (Int,Int) -> Points -> Points
--- move (x,y) pts = pts `shiftL` (x + 8*y)
-
--- moveRect :: (Int,Int) -> Rect -> Rect
--- moveRect (x,y) (Rect l b w h) = Rect (l+x) (b+y) w h
-
--- moveObj :: (Int,Int) -> Obj -> Obj
--- moveObj (x,y) obj = Obj (move (x,y) (objPoints obj)) (moveRect (x,y) (objRect obj))
-
--- -- mkPoint (0,n)
--- -- time:  O(n) [0 < n < 50000000000, 0 < secs < 12.36]
--- -- space: O(n) [0 < n < 50000000000, 0 < bytes < 50000139672]
--- -- https://nux-pc/svn/Nux-SVN/My Programming/Scratchings/Advent of Code 2022/day17 (bits).hs/?r=1569
--- mkPoint :: (Int,Int) -> Points
--- mkPoint (x,y) = move (x,y) 1
-
--- -- startObj: positions 2 away from left wall and 3 up from top of world in nonculled world space. Note that (8*x,y) corresponds to within the wall which includes (0,0).
--- startObj :: Int -> Obj -> Obj
--- startObj worldHeightAboveCull (Obj pts rect)
-    -- = let rect' = rect {
-                    -- rectLeft   = 3,
-                    -- rectBottom = worldHeightAboveCull + 3 }
-      -- in  Obj {
-            -- objPoints = (move (3, worldHeightAboveCull + 3)) pts,
-            -- objRect   = rect' }
-
--- obj1, obj2, obj3, obj4, obj5 :: Obj
--- obj1 = (\pts -> Obj pts (Rect 0 0 3 0)) $ foldl' (.|.) zeroBits $ map mkPoint [(0,0), (1,0), (2,0), (3,0)]
--- obj2 = (\pts -> Obj pts (Rect 0 0 2 2)) $ foldl' (.|.) zeroBits $ map mkPoint [(1,0), (0,1), (1,1), (2,1), (1,2)]
--- obj3 = (\pts -> Obj pts (Rect 0 0 2 2)) $ foldl' (.|.) zeroBits $ map mkPoint [(0,0), (1,0), (2,0), (2,1), (2,2)]
--- obj4 = (\pts -> Obj pts (Rect 0 0 0 3)) $ foldl' (.|.) zeroBits $ map mkPoint [(0,0), (0,1), (0,2), (0,3)]
--- obj5 = (\pts -> Obj pts (Rect 0 0 1 1)) $ foldl' (.|.) zeroBits $ map mkPoint [(0,0), (1,0), (0,1), (1,1)]
-
--- initObjs = cycle [obj1, obj2, obj3, obj4, obj5]
-
--- showObjs :: Int -> Points -> Points -> String
--- showObjs rows worldNonCulledPoints fallingObj = intercalate "\n" . reverse $ [[if x `mod` 8 == 0 then '|' else (if pt `isOverlapping` worldNonCulledPoints then '1' else (if pt `isOverlapping` fallingObj then '2' else '0'))| x <-[0..8], let pt = mkPoint (x,y)] | y <-[0..(rows-1)]]
-
 
 
 
@@ -404,3 +319,28 @@ isOverlapping ps1 ps2 = (ps1 .&. ps2) /= zeroBits
     -- let (start, reachable, dims) = readStartAndReachable (toWorld contents)
     
     -- printStartAndReachable (start, reachable, dims)
+
+up = (  0 ,   1 )
+dn = (  0 , (-1))
+lt = ((-1),   0 )
+rt = (  1 ,   0 )
+allDirs = [up,dn,lt,rt]
+
+charOrder :: Char -> Char -> Ordering
+charOrder c1 c2 = comparing specialRank c1 c2 <> compare c1 c2
+  where compareSpecial = comparing specialRank
+        
+        specialRank c = findIndex (==c) ['O','S','#','.']
+
+addRocksToRightAndTop :: String -> String
+addRocksToRightAndTop inStr = unlines . (\rows -> map (const '#') (head rows) : rows) . map (++"#") . lines $ inStr
+
+-- Main
+day21part1 = do
+    contents <- readFile "day21 (example).csv"
+    let (width, world) = readWorld '.' ['S'] (addRocksToRightAndTop contents)
+    let worldAfter1Step = fromJust $ insertLayerAtPoint 'O' 'S' world
+    let worldsAfter2Steps = map (\dir -> moveLayer 'O' dir worldAfter1Step) allDirs
+    print width
+    print world
+    printWorld 12 charOrder (combineWorlds worldsAfter2Steps)
