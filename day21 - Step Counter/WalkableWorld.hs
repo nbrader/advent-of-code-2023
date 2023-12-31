@@ -13,7 +13,8 @@ class WalkableWorld w where
   removeForbidden :: w -> w
   progressByAStep :: w -> w
   setOAtS :: w -> w
-  coreWorld :: w -> World.World
+  asWorld :: w -> World.World
+  oCount :: w -> Int
 
 printWorld :: (WalkableWorld w) => Int -> w -> IO ()
 printWorld height w = putStrLn $ showWorld height w

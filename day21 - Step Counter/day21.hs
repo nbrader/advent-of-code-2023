@@ -59,7 +59,7 @@ day21part1 = do
     let futureWorlds = iterate progressByAStep worldBeforeStep
     -- print world
     -- mapM_ (printWorld 12) (take 7 futureWorlds)
-    print . popCount . fromJust . M.lookup 'O' . worldLayers . (!!64) . map coreWorld $ futureWorlds
+    print . oCount . (!!64) $ futureWorlds
 
 duplicateWorldNxN :: Int -> String -> String
 duplicateWorldNxN n inStr = unlines . concat . replicate n . map (concat . replicate n) . lines $ inStr
@@ -69,11 +69,11 @@ day21part2 = do
     let (originalHeight, originalWorld) = (readWorld :: String -> (Int,WalkableBoundedWorld)) contents
     let dupeCount = 2*((26501365 `div` originalHeight) + 1)
     let semiDupeCount = dupeCount `div` 2
-    let originalWidth = worldWidth (coreWorld originalWorld)
+    let originalWidth = worldWidth (asWorld originalWorld)
     let (height, world') = (readWorld :: String -> (Int,WalkableBoundedWorld)) (duplicateWorldNxN dupeCount contents)
-    let world = WalkableBoundedWorld $ movePointInWorld 'S' (semiDupeCount*originalWidth,-semiDupeCount*originalHeight) (coreWorld world')
+    let world = WalkableBoundedWorld $ movePointInWorld 'S' (semiDupeCount*originalWidth,-semiDupeCount*originalHeight) (asWorld world')
     let worldBeforeStep = setOAtS world
     let futureWorlds = iterate' progressByAStep worldBeforeStep
     -- print world
     -- mapM_ (B.printWorld 150) (take 7 futureWorlds)
-    print . popCount . fromJust . M.lookup 'O' . worldLayers . (!!26501365) . map coreWorld $ futureWorlds
+    print . oCount . (!!26501365) $ futureWorlds

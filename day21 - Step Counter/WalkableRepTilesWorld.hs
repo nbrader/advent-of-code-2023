@@ -47,22 +47,30 @@ import WalkableBoundedWorld as B
 
 import WalkableWorld as Class
 
-data WalkableRepTilesWorld = WalkableRepTilesWorld {coreWorld :: World}
+data WalkableRepTilesWorld = WalkableRepTilesWorld {asWorld :: World, asOriginalWorld :: World}
 
 instance WalkableWorld WalkableRepTilesWorld where
-    readWorld        = fmap fromBounded . Class.readWorld
-    showWorld height =                    Class.showWorld height . toBounded
-    removeForbidden  =      fromBounded . Class.removeForbidden  . toBounded
-    setOAtS          =      fromBounded . Class.setOAtS          . toBounded
-    coreWorld        =                    Class.coreWorld        . toBounded
+    readWorld        = fmap (fromWorldAndBounded . (\x -> (Class.asWorld x, x))) . Class.readWorld
+    removeForbidden  = fromWorldAndBounded . fmap Class.removeForbidden  . toWorldAndBounded
+    setOAtS          = fromWorldAndBounded . fmap Class.setOAtS          . toWorldAndBounded
+    showWorld height = Class.showWorld height . toBounded
+    asWorld          = Class.asWorld          . toBounded
+    oCount           = Class.oCount           . toBounded
 
     progressByAStep :: WalkableRepTilesWorld -> WalkableRepTilesWorld
-    progressByAStep w = undefined --removeForbidden $ WalkableRepTilesWorld $ combineWorlds $ map (\dir -> moveLayerInWorld 'O' dir (Class.coreWorld w)) allDirs
+    progressByAStep w
+        | Class.oCount before == Class.oCount after = after
+        | otherwise                                 = undefined -- find out which directions need expanding and add a copy of the original world
+      where before = w
+            after  = Class.progressByAStep w
 
+fromWorldAndBounded :: (World, WalkableBoundedWorld) -> WalkableRepTilesWorld
+fromWorldAndBounded (w,w') = WalkableRepTilesWorld w (Class.asWorld w')
 
-
-fromBounded :: WalkableBoundedWorld -> WalkableRepTilesWorld
-fromBounded = WalkableRepTilesWorld . Class.coreWorld
+toWorldAndBounded :: WalkableRepTilesWorld -> (World, WalkableBoundedWorld)
+toWorldAndBounded w = (originalWorld, WalkableBoundedWorld coreWorld)
+  where coreWorld = Class.asWorld w
+        originalWorld = asOriginalWorld w
 
 toBounded :: WalkableRepTilesWorld -> WalkableBoundedWorld
-toBounded = WalkableBoundedWorld . Class.coreWorld
+toBounded = WalkableBoundedWorld . Class.asWorld

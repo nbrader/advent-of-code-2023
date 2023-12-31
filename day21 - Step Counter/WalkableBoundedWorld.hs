@@ -7,8 +7,10 @@ module WalkableBoundedWorld (WalkableBoundedWorld(WalkableBoundedWorld), charOrd
 -- Imports --
 -------------
 import Data.List (findIndex)
+import qualified Data.Map as M
 import Data.Maybe (fromJust)
 import Data.Ord
+import Data.Bits
 
 import Layer ( allDirs )
 
@@ -22,7 +24,7 @@ import World as W ( World(..)
 
 import WalkableWorld as Class
 
-newtype WalkableBoundedWorld = WalkableBoundedWorld {coreWorld :: World}
+newtype WalkableBoundedWorld = WalkableBoundedWorld {asWorld :: World}
 
 instance WalkableWorld WalkableBoundedWorld where
     -- Assumes all rows have equal length
@@ -30,19 +32,22 @@ instance WalkableWorld WalkableBoundedWorld where
     readWorld = fmap WalkableBoundedWorld . W.readWorld '.' ['S'] . addRocksToRightAndTop
 
     showWorld :: Int -> WalkableBoundedWorld -> String
-    showWorld height w = W.showWorld height charOrder (Class.coreWorld w)
+    showWorld height w = W.showWorld height charOrder (Class.asWorld w)
 
     removeForbidden :: WalkableBoundedWorld -> WalkableBoundedWorld
-    removeForbidden w = WalkableBoundedWorld $ cutLayerWithLayer 'O' '#' (Class.coreWorld w)
+    removeForbidden w = WalkableBoundedWorld $ cutLayerWithLayer 'O' '#' (Class.asWorld w)
 
     progressByAStep :: WalkableBoundedWorld -> WalkableBoundedWorld
-    progressByAStep w = removeForbidden . WalkableBoundedWorld $ combineWorlds $ map (\dir -> moveLayerInWorld 'O' dir (Class.coreWorld w)) allDirs
+    progressByAStep w = removeForbidden . WalkableBoundedWorld $ combineWorlds $ map (\dir -> moveLayerInWorld 'O' dir (Class.asWorld w)) allDirs
 
     setOAtS :: WalkableBoundedWorld -> WalkableBoundedWorld
-    setOAtS = WalkableBoundedWorld . fromJust . insertLayerAtPoint 'O' 'S' . Class.coreWorld
+    setOAtS = WalkableBoundedWorld . fromJust . insertLayerAtPoint 'O' 'S' . Class.asWorld
     
-    coreWorld :: WalkableBoundedWorld -> W.World
-    coreWorld = WalkableBoundedWorld.coreWorld
+    asWorld :: WalkableBoundedWorld -> W.World
+    asWorld = WalkableBoundedWorld.asWorld
+    
+    oCount :: WalkableBoundedWorld -> Int
+    oCount = popCount . fromJust . M.lookup 'O' . worldLayers . Class.asWorld
 
 charOrder :: Char -> Char -> Ordering
 charOrder c1 c2 = comparing specialRank c1 c2 <> compare c1 c2
