@@ -20,7 +20,7 @@ import World as W ( World(..)
                   , cutLayerWithLayer
                   , insertLayerAtPoint )
 
-import WalkableWorld
+import WalkableWorld as Class
 
 newtype WalkableBoundedWorld = WalkableBoundedWorld {coreWorld :: World}
 
@@ -30,19 +30,16 @@ instance WalkableWorld WalkableBoundedWorld where
     readWorld = fmap WalkableBoundedWorld . W.readWorld '.' ['S'] . addRocksToRightAndTop
 
     showWorld :: Int -> WalkableBoundedWorld -> String
-    showWorld height w = W.showWorld height charOrder (WalkableWorld.coreWorld w)
-
-    printWorld :: Int -> WalkableBoundedWorld -> IO ()
-    printWorld height w = putStrLn $ WalkableWorld.showWorld height w
+    showWorld height w = W.showWorld height charOrder (Class.coreWorld w)
 
     removeForbidden :: WalkableBoundedWorld -> WalkableBoundedWorld
-    removeForbidden w = WalkableBoundedWorld $ cutLayerWithLayer 'O' '#' (WalkableWorld.coreWorld w)
+    removeForbidden w = WalkableBoundedWorld $ cutLayerWithLayer 'O' '#' (Class.coreWorld w)
 
     progressByAStep :: WalkableBoundedWorld -> WalkableBoundedWorld
-    progressByAStep w = WalkableWorld.removeForbidden . WalkableBoundedWorld $ combineWorlds $ map (\dir -> moveLayerInWorld 'O' dir (WalkableWorld.coreWorld w)) allDirs
+    progressByAStep w = removeForbidden . WalkableBoundedWorld $ combineWorlds $ map (\dir -> moveLayerInWorld 'O' dir (Class.coreWorld w)) allDirs
 
     setOAtS :: WalkableBoundedWorld -> WalkableBoundedWorld
-    setOAtS = WalkableBoundedWorld . fromJust . insertLayerAtPoint 'O' 'S' . WalkableWorld.coreWorld
+    setOAtS = WalkableBoundedWorld . fromJust . insertLayerAtPoint 'O' 'S' . Class.coreWorld
     
     coreWorld :: WalkableBoundedWorld -> W.World
     coreWorld = WalkableBoundedWorld.coreWorld

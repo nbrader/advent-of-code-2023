@@ -6,6 +6,10 @@ module WalkableRepTilesWorld (WalkableRepTilesWorld(WalkableRepTilesWorld)) wher
 -------------
 -- Imports --
 -------------
+import Data.List (findIndex)
+import Data.Maybe (fromJust)
+import Data.Ord
+
 import Layer ( SingularPoint
              , Layer
              , pointToIndex
@@ -22,25 +26,25 @@ import Layer ( SingularPoint
 
 import World as W
             ( World(..)
-             , emptyWorld
-             , readWorld
-             , showWorld
-             , printWorld
-             , combineTwoWorlds
-             , combineWorlds
-             , hasPoint
-             , moveLayerInWorld
-             , movePointInWorld
-             , cutLayerWithLayer
-             , setPoint
-             , insertLayerAtPoint
-             , isOverlappingLayers )
+            , emptyWorld
+            , readWorld
+            , showWorld
+            , printWorld
+            , combineTwoWorlds
+            , combineWorlds
+            , hasPoint
+            , moveLayerInWorld
+            , movePointInWorld
+            , cutLayerWithLayer
+            , setPoint
+            , insertLayerAtPoint
+            , isOverlappingLayers )
 
 import WalkableBoundedWorld as B
                             ( charOrder
                             , addRocksToRightAndTop )
 
-import WalkableWorld
+import WalkableWorld as Class
 
 data WalkableRepTilesWorld = WalkableRepTilesWorld {coreWorld :: World}
 
@@ -49,19 +53,16 @@ instance WalkableWorld WalkableRepTilesWorld where
     readWorld = fmap WalkableRepTilesWorld . W.readWorld '.' ['S'] . addRocksToRightAndTop
 
     showWorld :: Int -> WalkableRepTilesWorld -> String
-    showWorld height world = undefined -- W.showWorld height charOrder world
-
-    printWorld :: Int -> WalkableRepTilesWorld -> IO ()
-    printWorld height world = undefined -- putStrLn $ WalkableBoundedWorld.showWorld height world
+    showWorld height world = W.showWorld height charOrder (Class.coreWorld world)
 
     removeForbidden :: WalkableRepTilesWorld -> WalkableRepTilesWorld
-    removeForbidden w = undefined -- cutLayerWithLayer 'O' '#' w
+    removeForbidden w = WalkableRepTilesWorld $ cutLayerWithLayer 'O' '#' (Class.coreWorld w)
 
     progressByAStep :: WalkableRepTilesWorld -> WalkableRepTilesWorld
-    progressByAStep w = undefined -- removeForbidden $ combineWorlds $ map (\dir -> moveLayerInWorld 'O' dir w) allDirs
+    progressByAStep w = undefined --removeForbidden $ WalkableRepTilesWorld $ combineWorlds $ map (\dir -> moveLayerInWorld 'O' dir (Class.coreWorld w)) allDirs
 
     setOAtS :: WalkableRepTilesWorld -> WalkableRepTilesWorld
-    setOAtS = undefined -- fromJust . insertLayerAtPoint 'O' 'S'
-    
+    setOAtS w = WalkableRepTilesWorld $ fromJust . insertLayerAtPoint 'O' 'S' $ Class.coreWorld w
+
     coreWorld :: WalkableRepTilesWorld -> W.World
     coreWorld = WalkableRepTilesWorld.coreWorld
