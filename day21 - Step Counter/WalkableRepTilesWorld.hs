@@ -65,7 +65,7 @@ instance WalkableWorld WalkableRepTilesWorld where
             after  = Class.progressByAStep w
 
 fromWorldAndBounded :: (World, WalkableBoundedWorld) -> WalkableRepTilesWorld
-fromWorldAndBounded (w,w') = WalkableRepTilesWorld w (Class.asWorld w')
+fromWorldAndBounded (originalWorld,boundedWorld) = WalkableRepTilesWorld (Class.asWorld boundedWorld) originalWorld
 
 toWorldAndBounded :: WalkableRepTilesWorld -> (World, WalkableBoundedWorld)
 toWorldAndBounded w = (originalWorld, WalkableBoundedWorld coreWorld)
