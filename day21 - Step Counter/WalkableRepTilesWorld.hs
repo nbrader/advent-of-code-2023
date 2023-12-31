@@ -36,6 +36,8 @@ import World ( World(..)
              , isOverlappingLayers )
 
 import WalkableBoundedWorld ( readWalkableBoundedWorld
+                            , showWalkableBoundedWorld
+                            , printWalkableBoundedWorld
                             , charOrder
                             , addRocksToRightAndTop
                             , removeForbidden
