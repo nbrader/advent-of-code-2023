@@ -41,7 +41,8 @@ import World as W
             , isOverlappingLayers )
 
 import WalkableBoundedWorld as B
-                            ( charOrder
+                            ( WalkableBoundedWorld(..)
+                            , charOrder
                             , addRocksToRightAndTop )
 
 import WalkableWorld as Class
@@ -50,19 +51,25 @@ data WalkableRepTilesWorld = WalkableRepTilesWorld {coreWorld :: World}
 
 instance WalkableWorld WalkableRepTilesWorld where
     readWorld :: String -> (Int,WalkableRepTilesWorld)
-    readWorld = fmap WalkableRepTilesWorld . W.readWorld '.' ['S'] . addRocksToRightAndTop
+    readWorld = fmap fromBounded . Class.readWorld
 
     showWorld :: Int -> WalkableRepTilesWorld -> String
-    showWorld height world = W.showWorld height charOrder (Class.coreWorld world)
+    showWorld height world = Class.showWorld height (toBounded world)
 
     removeForbidden :: WalkableRepTilesWorld -> WalkableRepTilesWorld
-    removeForbidden w = WalkableRepTilesWorld $ cutLayerWithLayer 'O' '#' (Class.coreWorld w)
+    removeForbidden = fromBounded . Class.removeForbidden . toBounded
 
     progressByAStep :: WalkableRepTilesWorld -> WalkableRepTilesWorld
     progressByAStep w = undefined --removeForbidden $ WalkableRepTilesWorld $ combineWorlds $ map (\dir -> moveLayerInWorld 'O' dir (Class.coreWorld w)) allDirs
 
     setOAtS :: WalkableRepTilesWorld -> WalkableRepTilesWorld
-    setOAtS w = WalkableRepTilesWorld $ fromJust . insertLayerAtPoint 'O' 'S' $ Class.coreWorld w
+    setOAtS = fromBounded . Class.setOAtS . toBounded
 
     coreWorld :: WalkableRepTilesWorld -> W.World
-    coreWorld = WalkableRepTilesWorld.coreWorld
+    coreWorld = Class.coreWorld . toBounded
+
+fromBounded :: WalkableBoundedWorld -> WalkableRepTilesWorld
+fromBounded = WalkableRepTilesWorld . Class.coreWorld
+
+toBounded :: WalkableRepTilesWorld -> WalkableBoundedWorld
+toBounded = WalkableBoundedWorld . Class.coreWorld
