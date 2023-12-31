@@ -20,7 +20,8 @@ import Layer ( SingularPoint
              , rt
              , allDirs )
 
-import World ( World(..)
+import World as W
+            ( World(..)
              , emptyWorld
              , readWorld
              , showWorld
@@ -35,9 +36,10 @@ import World ( World(..)
              , insertLayerAtPoint
              , isOverlappingLayers )
 
-import WalkableBoundedWorld ( readWalkableBoundedWorld
-                            , showWalkableBoundedWorld
-                            , printWalkableBoundedWorld
+import WalkableBoundedWorld as B
+                            ( readWorld
+                            , showWorld
+                            , printWorld
                             , charOrder
                             , addRocksToRightAndTop
                             , removeForbidden
@@ -47,4 +49,4 @@ import WalkableBoundedWorld ( readWalkableBoundedWorld
 data WalkableRepTilesWorld = WalkableRepTilesWorld {coreWorld :: World}
 
 readWalkableRepTilesWorld :: String -> (Int,WalkableRepTilesWorld)
-readWalkableRepTilesWorld = fmap WalkableRepTilesWorld . readWorld '.' ['S'] . addRocksToRightAndTop
+readWalkableRepTilesWorld = fmap WalkableRepTilesWorld . W.readWorld '.' ['S'] . addRocksToRightAndTop
