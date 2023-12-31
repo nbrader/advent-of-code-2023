@@ -32,7 +32,20 @@ import Data.Bits
 
 import Util (iterate')
 import Layer (allDirs)
-import World (World(..), emptyWorld, readWorld, showWorld, printWorld, combineTwoWorlds, combineWorlds, hasPoint, moveLayerInWorld, movePointInWorld, cutLayerWithLayer, setPoint, insertLayerAtPoint, isOverlappingLayers)
+import World ( World(..)
+             , emptyWorld
+             , readWorld
+             , showWorld
+             , printWorld
+             , combineTwoWorlds
+             , combineWorlds
+             , hasPoint
+             , moveLayerInWorld
+             , movePointInWorld
+             , cutLayerWithLayer
+             , setPoint
+             , insertLayerAtPoint
+             , isOverlappingLayers )
 
 
 -------------
