@@ -42,6 +42,7 @@ data WalkableBoundedWorldOptimised
     = WalkableBoundedWorldOptimised
             { worldBGChar :: Char
             , worldWalls :: S.Set (Int,Int)
+            , worldStart :: (Int,Int)
             , worldPrevVisited :: S.Set (Int,Int)
             , worldPrevPrevVisited :: S.Set (Int,Int)
             , worldCountedOddSteps :: Integer
@@ -55,14 +56,16 @@ instance WalkableWorld WalkableBoundedWorldOptimised where
         = ( height
           , WalkableBoundedWorldOptimised
                 { worldBGChar = bgChar
-                , worldWalls = undefined
-                , worldPrevVisited = undefined
-                , worldPrevPrevVisited = undefined
-                , worldCountedOddSteps = undefined
-                , worldCountedEvenSteps = undefined
+                , worldWalls = S.fromList . map snd . filter ((==startChar) . fst) $ char2Ds
+                , worldStart = head       . map snd . filter ((==wallChar)  . fst) $ char2Ds
+                , worldPrevVisited = S.empty
+                , worldPrevPrevVisited = S.empty
+                , worldCountedOddSteps = 0
+                , worldCountedEvenSteps = 0
                 , worldWidth = width } )
       
-      where rows = lines inStr
+      where boundedInStr = boundWorldAsString inStr
+            rows = lines boundedInStr
             height = length rows
             width
               | height == 0 = 0
@@ -76,8 +79,6 @@ instance WalkableWorld WalkableBoundedWorldOptimised where
                 
                 let y = height - 1 - y'
                 
-                guard $ char /= bgChar
-                
                 return (char, (x, y))
 
     showWorld :: Int -> WalkableBoundedWorldOptimised -> String
@@ -90,7 +91,7 @@ instance WalkableWorld WalkableBoundedWorldOptimised where
     progressByAStep w = undefined -- removeForbidden . WalkableBoundedWorldOptimised $ combineWorlds $ map (\dir -> moveLayerInWorld 'O' dir (Class.asWorld w)) allDirs
 
     setOAtS :: WalkableBoundedWorldOptimised -> WalkableBoundedWorldOptimised
-    setOAtS = undefined -- WalkableBoundedWorldOptimised . fromJust . insertLayerAtPoint 'O' 'S' . Class.asWorld
+    setOAtS w = w {worldPrevVisited = S.singleton (worldStart w)}
     
     asWorld :: WalkableBoundedWorldOptimised -> W.World
     asWorld = undefined -- WalkableBoundedWorldOptimised.asWorld
@@ -99,5 +100,9 @@ instance WalkableWorld WalkableBoundedWorldOptimised where
     oCount = undefined -- popCount . fromJust . M.lookup 'O' . worldLayers . Class.asWorld
 
 bgChar = '.'
+startChar = 'S'
 wallChar = '#'
 recentVisitChar = 'O'
+
+boundWorldAsString :: String -> String
+boundWorldAsString inStr = unlines . (\rows -> let wallRow = map (const '#') (head rows) in wallRow : rows ++ [wallRow]) . map (\row -> '#':row++"#") . lines $ inStr
