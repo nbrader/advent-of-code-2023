@@ -66,7 +66,10 @@ instance WalkableWorld WalkableRepTilesWorld where
             
             expansionRequired = undefined
             -- expansionRequired = Class.oCount before == Class.oCount after -- This is bad logic because the oCount would be changing due to going in multiple directions.
-                                                                             -- I need to test whether the oCount reduces from what it was just after spreading out to what it was just after culling only based on world bounds.
+                                                                             -- I need to test whether the oCount reduces between
+                                                                             --    (what it was just after spreading out)
+                                                                             --  and
+                                                                             --    (what it was just after culling only based on world bounds).
                                                                              -- Only after checking and ensuring adequate bounds size should I then remove all forbidden (which at that point should just be those that hit rocks).
 
 fromWorldAndBounded :: (World, WalkableBoundedWorld) -> WalkableRepTilesWorld
