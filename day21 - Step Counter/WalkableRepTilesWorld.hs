@@ -35,4 +35,12 @@ import World ( World(..)
              , insertLayerAtPoint
              , isOverlappingLayers )
 
-{- ADD STUFF -}
+import WalkableBoundedWorld ( readWalkableBoundedWorld
+                            , charOrder
+                            , addRocksToRightAndTop
+                            , removeForbidden
+                            , progressByAStep
+                            , setOAtS )
+
+readWalkableRepTilesWorld :: String -> (Int,World)
+readWalkableRepTilesWorld = undefined -- readWorld '.' ['S'] . addRocksToRightAndTop
