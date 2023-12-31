@@ -57,6 +57,7 @@ instance WalkableWorld WalkableRepTilesWorld where
     asWorld          = Class.asWorld          . toBounded
     oCount           = Class.oCount           . toBounded
 
+    -- progressByAStep expands the world with copies of the original world to allow indefinite walking in all directions
     progressByAStep :: WalkableRepTilesWorld -> WalkableRepTilesWorld
     progressByAStep w
         | expansionRequired = after
