@@ -24,10 +24,8 @@
 -------------
 -- Imports --
 -------------
-import Data.List (findIndex)
 import qualified Data.Map as M
 import Data.Maybe (fromJust)
-import Data.Ord
 import Data.Bits
 
 import Util (iterate')
@@ -47,33 +45,23 @@ import World ( World(..)
              , insertLayerAtPoint
              , isOverlappingLayers )
 
+import WalkableBoundedWorld ( readWalkableBoundedWorld
+                            , charOrder
+                            , addRocksToRightAndTop
+                            , removeForbidden
+                            , progressByAStep
+                            , setOAtS )
 
 -------------
 -- Program --
 -------------
 main = day21part2
 
-
-charOrder :: Char -> Char -> Ordering
-charOrder c1 c2 = comparing specialRank c1 c2 <> compare c1 c2
-  where compareSpecial = comparing specialRank
-        
-        specialRank c = findIndex (==c) ['O','S','#','.']
-
-addRocksToRightAndTop :: String -> String
-addRocksToRightAndTop inStr = unlines . (\rows -> map (const '#') (head rows) : rows) . map (++"#") . lines $ inStr
-
-removeForbidden :: World -> World
-removeForbidden w = cutLayerWithLayer 'O' '#' w
-
-progressByAStep :: World -> World
-progressByAStep w = removeForbidden $ combineWorlds $ map (\dir -> moveLayerInWorld 'O' dir w) allDirs
-
 -- Main
 day21part1 = do
     contents <- readFile "day21 (data).csv"
-    let (height, world) = readWorld '.' ['S'] (addRocksToRightAndTop contents)
-    let worldBeforeStep = fromJust $ insertLayerAtPoint 'O' 'S' world
+    let (height, world) = readWalkableBoundedWorld $ contents
+    let worldBeforeStep = setOAtS world
     let futureWorlds = iterate progressByAStep worldBeforeStep
     -- print width
     -- print world
@@ -91,7 +79,7 @@ day21part2 = do
     let originalWidth = worldWidth originalWorld
     let (height, world') = readWorld '.' ['S'] (duplicateWorldNxN dupeCount contents)
     let world = movePointInWorld 'S' (semiDupeCount*originalWidth,-semiDupeCount*originalHeight) world'
-    let worldBeforeStep = fromJust $ insertLayerAtPoint 'O' 'S' world
+    let worldBeforeStep = setOAtS world
     let futureWorlds = iterate' progressByAStep worldBeforeStep
     -- print width
     -- print world

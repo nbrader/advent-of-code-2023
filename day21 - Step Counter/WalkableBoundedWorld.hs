@@ -6,7 +6,35 @@ module WalkableBoundedWorld where
 -------------
 -- Imports --
 -------------
-import Layer (SingularPoint, Layer, pointToIndex, pointToLayer, moveLayer, movePoint, isOverlapping, diff, up, dn, lt, rt, allDirs)
-import World (World(..), emptyWorld, readWorld, showWorld, printWorld, combineTwoWorlds, combineWorlds, hasPoint, moveLayerInWorld, movePointInWorld, cutLayerWithLayer, setPoint, insertLayerAtPoint, isOverlappingLayers)
+import Data.List (findIndex)
+import Data.Maybe (fromJust)
+import Data.Ord
 
-{- ADD STUFF -}
+import Layer ( allDirs )
+
+import World ( World(..)
+             , readWorld
+             , combineWorlds
+             , moveLayerInWorld
+             , cutLayerWithLayer
+             , insertLayerAtPoint )
+
+readWalkableBoundedWorld :: String -> (Int,World)
+readWalkableBoundedWorld = readWorld '.' ['S'] . addRocksToRightAndTop
+
+charOrder :: Char -> Char -> Ordering
+charOrder c1 c2 = comparing specialRank c1 c2 <> compare c1 c2
+  where compareSpecial = comparing specialRank
+        
+        specialRank c = findIndex (==c) ['O','S','#','.']
+
+addRocksToRightAndTop :: String -> String
+addRocksToRightAndTop inStr = unlines . (\rows -> map (const '#') (head rows) : rows) . map (++"#") . lines $ inStr
+
+removeForbidden :: World -> World
+removeForbidden w = cutLayerWithLayer 'O' '#' w
+
+progressByAStep :: World -> World
+progressByAStep w = removeForbidden $ combineWorlds $ map (\dir -> moveLayerInWorld 'O' dir w) allDirs
+
+setOAtS = fromJust . insertLayerAtPoint 'O' 'S'

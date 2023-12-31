@@ -1,7 +1,20 @@
 #!/usr/bin/env stack
 -- stack --resolver lts-21.22 ghci --package containers-0.6.7 --package safe-0.3.19
 
-module World where
+module World ( World(..)
+             , emptyWorld
+             , readWorld
+             , showWorld
+             , printWorld
+             , combineTwoWorlds
+             , combineWorlds
+             , hasPoint
+             , moveLayerInWorld
+             , movePointInWorld
+             , cutLayerWithLayer
+             , setPoint
+             , insertLayerAtPoint
+             , isOverlappingLayers ) where
 
 -------------
 -- Imports --

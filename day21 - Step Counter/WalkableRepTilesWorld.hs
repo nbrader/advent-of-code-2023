@@ -6,7 +6,33 @@ module WalkableRepTilesWorld where
 -------------
 -- Imports --
 -------------
-import Layer (SingularPoint, Layer, pointToIndex, pointToLayer, moveLayer, movePoint, isOverlapping, diff, up, dn, lt, rt, allDirs)
-import World (World(..), emptyWorld, readWorld, showWorld, printWorld, combineTwoWorlds, combineWorlds, hasPoint, moveLayerInWorld, movePointInWorld, cutLayerWithLayer, setPoint, insertLayerAtPoint, isOverlappingLayers)
+import Layer ( SingularPoint
+             , Layer
+             , pointToIndex
+             , pointToLayer
+             , moveLayer
+             , movePoint
+             , isOverlapping
+             , diff
+             , up
+             , dn
+             , lt
+             , rt
+             , allDirs )
+
+import World ( World(..)
+             , emptyWorld
+             , readWorld
+             , showWorld
+             , printWorld
+             , combineTwoWorlds
+             , combineWorlds
+             , hasPoint
+             , moveLayerInWorld
+             , movePointInWorld
+             , cutLayerWithLayer
+             , setPoint
+             , insertLayerAtPoint
+             , isOverlappingLayers )
 
 {- ADD STUFF -}
