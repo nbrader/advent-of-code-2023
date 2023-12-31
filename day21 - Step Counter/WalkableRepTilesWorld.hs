@@ -48,5 +48,19 @@ import WalkableBoundedWorld as B
 
 data WalkableRepTilesWorld = WalkableRepTilesWorld {coreWorld :: World}
 
-readWalkableRepTilesWorld :: String -> (Int,WalkableRepTilesWorld)
-readWalkableRepTilesWorld = fmap WalkableRepTilesWorld . W.readWorld '.' ['S'] . addRocksToRightAndTop
+readWorld :: String -> (Int,WalkableRepTilesWorld)
+readWorld = fmap WalkableRepTilesWorld . W.readWorld '.' ['S'] . addRocksToRightAndTop
+
+showWorld :: Int -> WalkableRepTilesWorld -> String
+showWorld height world = undefined -- W.showWorld height charOrder world
+
+printWorld :: Int -> WalkableRepTilesWorld -> IO ()
+printWorld height world = undefined -- putStrLn $ WalkableBoundedWorld.showWorld height world
+
+removeForbidden :: WalkableRepTilesWorld -> WalkableRepTilesWorld
+removeForbidden w = undefined -- cutLayerWithLayer 'O' '#' w
+
+progressByAStep :: WalkableRepTilesWorld -> WalkableRepTilesWorld
+progressByAStep w = undefined -- removeForbidden $ combineWorlds $ map (\dir -> moveLayerInWorld 'O' dir w) allDirs
+
+setOAtS = undefined -- fromJust . insertLayerAtPoint 'O' 'S'

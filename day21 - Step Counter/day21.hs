@@ -30,27 +30,32 @@ import Data.Bits
 
 import Util (iterate')
 import Layer (allDirs)
-import World ( World(..)
-             , emptyWorld
-             , readWorld
-             , showWorld
-             , printWorld
-             , combineTwoWorlds
-             , combineWorlds
-             , hasPoint
-             , moveLayerInWorld
-             , movePointInWorld
-             , cutLayerWithLayer
-             , setPoint
-             , insertLayerAtPoint
-             , isOverlappingLayers )
+import World as W ( World(..)
+                  , emptyWorld
+                  , readWorld
+                  , showWorld
+                  , printWorld
+                  , combineTwoWorlds
+                  , combineWorlds
+                  , hasPoint
+                  , moveLayerInWorld
+                  , movePointInWorld
+                  , cutLayerWithLayer
+                  , setPoint
+                  , insertLayerAtPoint
+                  , isOverlappingLayers )
 
-import WalkableBoundedWorld ( readWalkableBoundedWorld
-                            , showWalkableBoundedWorld
-                            , printWalkableBoundedWorld
-                            , charOrder
-                            , addRocksToRightAndTop
-                            , removeForbidden
+import WalkableBoundedWorld as B
+                            ( readWorld
+                            , showWorld
+                            , printWorld
+                            , progressByAStep
+                            , setOAtS )
+
+import WalkableRepTilesWorld as R
+                            ( readWorld
+                            , showWorld
+                            , printWorld
                             , progressByAStep
                             , setOAtS )
 
@@ -62,11 +67,11 @@ main = day21part2
 -- Main
 day21part1 = do
     contents <- readFile "day21 (data).csv"
-    let (height, world) = readWalkableBoundedWorld $ contents
-    let worldBeforeStep = setOAtS world
-    let futureWorlds = iterate progressByAStep worldBeforeStep
+    let (height, world) = B.readWorld $ contents
+    let worldBeforeStep = B.setOAtS world
+    let futureWorlds = iterate B.progressByAStep worldBeforeStep
     -- print world
-    -- mapM_ (printWalkableBoundedWorld 12) (take 7 futureWorlds)
+    -- mapM_ (B.printWorld 12) (take 7 futureWorlds)
     print . popCount . fromJust . M.lookup 'O' . worldLayers . (!!64) $ futureWorlds
 
 duplicateWorldNxN :: Int -> String -> String
@@ -74,14 +79,14 @@ duplicateWorldNxN n inStr = unlines . concat . replicate n . map (concat . repli
 
 day21part2 = do
     contents <- readFile "day21 (example).csv"
-    let (originalHeight, originalWorld) = readWorld '.' ['S'] contents
+    let (originalHeight, originalWorld) = W.readWorld '.' ['S'] contents
     let dupeCount = 2*((26501365 `div` originalHeight) + 1)
     let semiDupeCount = dupeCount `div` 2
     let originalWidth = worldWidth originalWorld
-    let (height, world') = readWorld '.' ['S'] (duplicateWorldNxN dupeCount contents)
+    let (height, world') = W.readWorld '.' ['S'] (duplicateWorldNxN dupeCount contents)
     let world = movePointInWorld 'S' (semiDupeCount*originalWidth,-semiDupeCount*originalHeight) world'
-    let worldBeforeStep = setOAtS world
-    let futureWorlds = iterate' progressByAStep worldBeforeStep
+    let worldBeforeStep = B.setOAtS world
+    let futureWorlds = iterate' B.progressByAStep worldBeforeStep
     -- print world
-    -- mapM_ (printWalkableBoundedWorld 150) (take 7 futureWorlds)
+    -- mapM_ (B.printWorld 150) (take 7 futureWorlds)
     print . popCount . fromJust . M.lookup 'O' . worldLayers . (!!26501365) $ futureWorlds
