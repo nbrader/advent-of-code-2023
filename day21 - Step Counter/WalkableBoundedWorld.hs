@@ -14,13 +14,21 @@ import Layer ( allDirs )
 
 import World ( World(..)
              , readWorld
+             , showWorld
              , combineWorlds
              , moveLayerInWorld
              , cutLayerWithLayer
              , insertLayerAtPoint )
 
+-- Assumes all rows have equal length
 readWalkableBoundedWorld :: String -> (Int,World)
 readWalkableBoundedWorld = readWorld '.' ['S'] . addRocksToRightAndTop
+
+showWalkableBoundedWorld :: Int -> World -> String
+showWalkableBoundedWorld height world = showWorld height charOrder world
+
+printWalkableBoundedWorld :: Int -> World -> IO ()
+printWalkableBoundedWorld height world = putStrLn $ showWalkableBoundedWorld height world
 
 charOrder :: Char -> Char -> Ordering
 charOrder c1 c2 = comparing specialRank c1 c2 <> compare c1 c2

@@ -46,6 +46,8 @@ import World ( World(..)
              , isOverlappingLayers )
 
 import WalkableBoundedWorld ( readWalkableBoundedWorld
+                            , showWalkableBoundedWorld
+                            , printWalkableBoundedWorld
                             , charOrder
                             , addRocksToRightAndTop
                             , removeForbidden
@@ -63,9 +65,8 @@ day21part1 = do
     let (height, world) = readWalkableBoundedWorld $ contents
     let worldBeforeStep = setOAtS world
     let futureWorlds = iterate progressByAStep worldBeforeStep
-    -- print width
     -- print world
-    -- mapM_ (printWorld 12 charOrder) (take 7 futureWorlds)
+    -- mapM_ (printWalkableBoundedWorld 12) (take 7 futureWorlds)
     print . popCount . fromJust . M.lookup 'O' . worldLayers . (!!64) $ futureWorlds
 
 duplicateWorldNxN :: Int -> String -> String
@@ -81,7 +82,6 @@ day21part2 = do
     let world = movePointInWorld 'S' (semiDupeCount*originalWidth,-semiDupeCount*originalHeight) world'
     let worldBeforeStep = setOAtS world
     let futureWorlds = iterate' progressByAStep worldBeforeStep
-    -- print width
     -- print world
-    -- mapM_ (printWorld 150 charOrder) (take 7 futureWorlds)
+    -- mapM_ (printWalkableBoundedWorld 150) (take 7 futureWorlds)
     print . popCount . fromJust . M.lookup 'O' . worldLayers . (!!26501365) $ futureWorlds
