@@ -59,10 +59,14 @@ instance WalkableWorld WalkableRepTilesWorld where
 
     progressByAStep :: WalkableRepTilesWorld -> WalkableRepTilesWorld
     progressByAStep w
-        | Class.oCount before == Class.oCount after = after
-        | otherwise                                 = undefined -- find out which directions need expanding and add a copy of the original world
+        | expansionRequired = after
+        | otherwise         = undefined -- Find out which directions need expanding and add a copy of the original world.
       where before = w
             after  = Class.progressByAStep w
+            
+            expansionRequired = Class.oCount before == Class.oCount after -- This is bad logic because the oCount would be changing due to going in multiple directions.
+                                                                          -- I need to test whether the oCount reduces from what it was just after spreading out to what it was just after culling only based on world bounds.
+                                                                          -- Only after checking and ensuring adequate bounds size should I then remove all forbidden (including those that hit rocks).
 
 fromWorldAndBounded :: (World, WalkableBoundedWorld) -> WalkableRepTilesWorld
 fromWorldAndBounded (originalWorld,boundedWorld) = WalkableRepTilesWorld {asOriginalWorld = originalWorld, WalkableRepTilesWorld.asWorld = Class.asWorld boundedWorld}
