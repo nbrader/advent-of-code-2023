@@ -96,8 +96,8 @@ instance WalkableWorld WalkableBoundedWorldOptimised where
     asWorld :: WalkableBoundedWorldOptimised -> W.World
     asWorld = undefined -- WalkableBoundedWorldOptimised.asWorld
     
-    oCount :: WalkableBoundedWorldOptimised -> Int
-    oCount = undefined -- popCount . fromJust . M.lookup 'O' . worldLayers . Class.asWorld
+    oCount :: WalkableBoundedWorldOptimised -> Integer
+    oCount = worldCountedOddSteps
 
 bgChar = '.'
 startChar = 'S'

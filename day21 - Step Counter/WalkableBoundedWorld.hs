@@ -46,8 +46,8 @@ instance WalkableWorld WalkableBoundedWorld where
     asWorld :: WalkableBoundedWorld -> W.World
     asWorld = WalkableBoundedWorld.asWorld
     
-    oCount :: WalkableBoundedWorld -> Int
-    oCount = popCount . fromJust . M.lookup 'O' . worldLayers . Class.asWorld
+    oCount :: WalkableBoundedWorld -> Integer
+    oCount = toInteger . popCount . fromJust . M.lookup 'O' . worldLayers . Class.asWorld
 
 charOrder :: Char -> Char -> Ordering
 charOrder c1 c2 = comparing specialRank c1 c2 <> compare c1 c2

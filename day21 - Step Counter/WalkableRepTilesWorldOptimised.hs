@@ -69,5 +69,5 @@ instance WalkableWorld WalkableRepTilesWorldOptimised where
     asWorld :: WalkableRepTilesWorldOptimised -> W.World
     asWorld = undefined -- WalkableRepTilesWorldOptimised.asWorld
     
-    oCount :: WalkableRepTilesWorldOptimised -> Int
+    oCount :: WalkableRepTilesWorldOptimised -> Integer
     oCount = undefined -- popCount . fromJust . M.lookup 'O' . worldLayers . Class.asWorld

@@ -14,7 +14,7 @@ class WalkableWorld w where
   progressByAStep :: w -> w
   setOAtS :: w -> w
   asWorld :: w -> World.World
-  oCount :: w -> Int
+  oCount :: w -> Integer
 
 printWorld :: (WalkableWorld w) => Int -> w -> IO ()
 printWorld height w = putStrLn $ showWorld height w
