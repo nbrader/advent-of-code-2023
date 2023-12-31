@@ -66,7 +66,8 @@ day21part1 = do
 duplicateWorldNxNAsString :: Int -> String -> String
 duplicateWorldNxNAsString n inStr = unlines . concat . replicate n . map (concat . replicate n) . lines $ inStr
 
--- Instead of using any of the data types so far developed, just keep track of every odd number of positions added and the last two added sets of positions and then expand out in every direction not included in the oldest set of positions or overlapping a rock after being brought to the original rock layout positions.
+
+-- TO DO: Use QuadTree to speed up search
 day21part2 = do
     contents <- readFile "day21 (data).csv"
     let (height, world) = (readWorld :: String -> (Int,WalkableRepTilesWorldOptimised)) contents
