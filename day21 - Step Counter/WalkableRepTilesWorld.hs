@@ -60,7 +60,7 @@ instance WalkableWorld WalkableRepTilesWorld where
     progressByAStep :: WalkableRepTilesWorld -> WalkableRepTilesWorld
     progressByAStep w
         | expansionRequired = after
-        | otherwise         = undefined -- Find out which directions need expanding and add a copy of the original world.
+        | otherwise         = undefined -- Find out which directions need expanding and add copies of the original world to expand in that direction.
       where before = w
             after  = Class.progressByAStep w
             
