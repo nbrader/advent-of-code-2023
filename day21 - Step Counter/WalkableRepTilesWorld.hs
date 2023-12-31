@@ -44,5 +44,7 @@ import WalkableBoundedWorld ( readWalkableBoundedWorld
                             , progressByAStep
                             , setOAtS )
 
-readWalkableRepTilesWorld :: String -> (Int,World)
-readWalkableRepTilesWorld = undefined -- readWorld '.' ['S'] . addRocksToRightAndTop
+data WalkableRepTilesWorld = WalkableRepTilesWorld {coreWorld :: World}
+
+readWalkableRepTilesWorld :: String -> (Int,WalkableRepTilesWorld)
+readWalkableRepTilesWorld = fmap WalkableRepTilesWorld . readWorld '.' ['S'] . addRocksToRightAndTop
