@@ -8,7 +8,7 @@
 --------------------------------
 {-
     To build, run the following shell command in this directory:
-        stack --resolver lts-21.22 ghc --package containers-0.6.7 --package linear-1.22 --package deque-0.4.4.1 -- '.\day21.hs' -O2
+        stack --resolver lts-21.22 ghc --package containers-0.6.7 --package linear-1.22 --package deque-0.4.4.1 --package safe-0.3.19 -- '.\day21.hs' -O2
 -}
 
 ------------
@@ -46,16 +46,16 @@ import Safe (atMay)
 -------------
 -- Program --
 -------------
--- main = day21part1
+main = day21part2
 
 
--- Each obj has a shape of Points encoded as Integer.
+-- Each obj has a shape encoded as bits of an Integer.
 type SingularPoint = (Int,Int)
-type Points = Integer
+type Layer = Integer
 
 data World
     = World { worldBG :: Char
-            , worldLayers :: M.Map Char Points
+            , worldLayers :: M.Map Char Layer
             , worldPoints :: M.Map Char SingularPoint
             , worldWidth :: Int } deriving (Show)
 
@@ -68,7 +68,7 @@ readWorld :: Char -> [Char] -> String -> (Int,World)
 readWorld bgChar singularChars inStr
     = ( height
       , World { worldBG = bgChar,
-                worldLayers = foldr addToLayer M.empty char2Ds,
+                worldLayers = foldr addToLayer M.empty $ filter (\(char,_) -> not (char `elem` singularChars)) char2Ds,
                 worldPoints = singularPoints,
                 worldWidth = width } )
        
@@ -93,11 +93,11 @@ readWorld bgChar singularChars inStr
             
             return (char, (x, y))
 
-        addToLayer :: (Char, (Int, Int)) -> M.Map Char Points -> M.Map Char Points
+        addToLayer :: (Char, (Int, Int)) -> M.Map Char Layer -> M.Map Char Layer
         addToLayer (char, (x, y)) = M.alter (setBitInLayer (x, y)) char
 
-        setBitInLayer :: (Int, Int) -> Maybe Points -> Maybe Points
-        setBitInLayer (x, y) maybePoints = Just $ setBit (fromMaybe 0 maybePoints) (y * width + x)
+        setBitInLayer :: (Int, Int) -> Maybe Layer -> Maybe Layer
+        setBitInLayer (x, y) maybeLayer = Just $ setBit (fromMaybe 0 maybeLayer) (y * width + x)
 
 
 showWorld :: Int -> (Char -> Char -> Ordering) -> World -> String
@@ -137,7 +137,7 @@ exampleWorld2 :: World
 exampleWorld2 = World '.' (M.fromList [('U',20),('Z',1)]) (M.fromList [('V',(3,3))]) 10
 
 exampleWorld3 :: World
-exampleWorld3 = moveLayer 'U' (-1,-1) $ exampleWorld2
+exampleWorld3 = moveLayerInWorld 'U' (-1,-1) $ exampleWorld2
 
 exampleWorld4 :: World
 exampleWorld4 = exampleWorld1 `combineTwoWorlds` exampleWorld2
@@ -154,7 +154,7 @@ combineTwoWorlds :: World -> World -> World
 combineTwoWorlds w1 w2
     = w1 { worldLayers = M.unionWith combineLayers (worldLayers w1) (worldLayers w2),
            worldPoints = M.unionWith combinePoints (worldPoints w1) (worldPoints w2) }
-  where combineLayers :: Points -> Points -> Points
+  where combineLayers :: Layer -> Layer -> Layer
         combineLayers points1 points2 = points1 .|. points2
         
         combinePoints :: SingularPoint -> SingularPoint -> SingularPoint
@@ -178,8 +178,12 @@ hasPoint char point world = inSingularPoints || inLayers
 pointToIndex :: Int -> SingularPoint -> Int
 pointToIndex width (x, y) = y * width + x
 
-moveLayer :: Char -> (Int,Int) -> World -> World
-moveLayer c (dx,dy) w = w {worldLayers = M.update (\pts -> Just $ movePoints width (dx,dy) pts) c (worldLayers w)}
+moveLayerInWorld :: Char -> (Int,Int) -> World -> World
+moveLayerInWorld c (dx,dy) w = w {worldLayers = M.update (\pts -> Just $ moveLayer width (dx,dy) pts) c (worldLayers w)}
+  where width = worldWidth w
+
+movePointInWorld :: Char -> (Int,Int) -> World -> World
+movePointInWorld c (dx,dy) w = w {worldPoints = M.update (\pt -> Just $ movePoint width (dx,dy) pt) c (worldPoints w)}
   where width = worldWidth w
 
 cutLayerWithLayer :: Char -> Char -> World -> World
@@ -197,15 +201,18 @@ setPoint c (x,y) w = w {worldPoints = M.insert c (x,y) (worldPoints w)}
 insertLayerAtPoint :: Char -> Char -> World -> Maybe World
 insertLayerAtPoint layerChar pointChar w = do
     point <- M.lookup pointChar (worldPoints w)
-    let newLayer = pointToPoints width point
+    let newLayer = pointToLayer width point
     return $ w {worldLayers = M.insert layerChar newLayer (worldLayers w)}
   where width = worldWidth w
 
-pointToPoints :: Int -> SingularPoint -> Points
-pointToPoints width (x,y) = movePoints width (x,y) 1
+pointToLayer :: Int -> SingularPoint -> Layer
+pointToLayer width (x,y) = moveLayer width (x,y) 1
 
-movePoints :: Int -> (Int,Int) -> Points -> Points
-movePoints width (dx,dy) pts = pts `shift` pointToIndex width (dx,dy)
+moveLayer :: Int -> (Int,Int) -> Layer -> Layer
+moveLayer width (dx,dy) pts = pts `shift` pointToIndex width (dx,dy)
+
+movePoint :: Int -> (Int,Int) -> (Int,Int) -> (Int,Int)
+movePoint width (dx,dy) (x,y) = (x+dx,y+dy)
 
 isOverlappingLayers :: Char -> Char -> World -> Bool
 isOverlappingLayers c1 c2 w
@@ -220,10 +227,10 @@ isOverlappingLayers c1 c2 w
 -- time:  O(n) (approx.) [0 < n < 10000000000, 0 < secs < 7.97]
 -- space: O(n) (approx.) [0 < n < 10000000000, 0 < bytes < 30000141704]
 -- https://nux-pc/svn/Nux-SVN/My Programming/Scratchings/Advent of Code 2022/day17 (bits).hs/?r=1569
-isOverlapping :: Points -> Points -> Bool
+isOverlapping :: Layer -> Layer -> Bool
 isOverlapping ps1 ps2 = (ps1 .&. ps2) /= zeroBits
 
-diff :: Points -> Points -> Points
+diff :: Layer -> Layer -> Layer
 diff ps1 ps2 = (ps1 .&. complement ps2)
 
 
@@ -351,12 +358,12 @@ removeForbidden :: World -> World
 removeForbidden w = cutLayerWithLayer 'O' '#' w
 
 progressByAStep :: World -> World
-progressByAStep w = removeForbidden $ combineWorlds $ map (\dir -> moveLayer 'O' dir w) allDirs
+progressByAStep w = removeForbidden $ combineWorlds $ map (\dir -> moveLayerInWorld 'O' dir w) allDirs
 
 -- Main
 day21part1 = do
     contents <- readFile "day21 (data).csv"
-    let (width, world) = readWorld '.' ['S'] (addRocksToRightAndTop contents)
+    let (height, world) = readWorld '.' ['S'] (addRocksToRightAndTop contents)
     let worldBeforeStep = fromJust $ insertLayerAtPoint 'O' 'S' world
     let futureWorlds = iterate progressByAStep worldBeforeStep
     -- print width
@@ -364,12 +371,23 @@ day21part1 = do
     -- mapM_ (printWorld 12 charOrder) (take 7 futureWorlds)
     print . popCount . fromJust . M.lookup 'O' . worldLayers . (!!64) $ futureWorlds
 
+duplicateWorldNxN :: Int -> String -> String
+duplicateWorldNxN n inStr = unlines . concat . replicate n . map (concat . replicate n) . lines $ inStr
+
+iterate' :: (a -> a) -> a -> [a]
+iterate' f x = x `seq` (x : iterate' f (f x))
+
 day21part2 = do
     contents <- readFile "day21 (example).csv"
-    let (width, world) = readWorld '.' ['S'] (addRocksToRightAndTop contents)
+    let (originalHeight, originalWorld) = readWorld '.' ['S'] contents
+    let dupeCount = 2*((26501365 `div` originalHeight) + 1)
+    let semiDupeCount = dupeCount `div` 2
+    let originalWidth = worldWidth originalWorld
+    let (height, world') = readWorld '.' ['S'] (duplicateWorldNxN dupeCount contents)
+    let world = movePointInWorld 'S' (semiDupeCount*originalWidth,-semiDupeCount*originalHeight) world'
     let worldBeforeStep = fromJust $ insertLayerAtPoint 'O' 'S' world
-    let futureWorlds = iterate progressByAStep worldBeforeStep
+    let futureWorlds = iterate' progressByAStep worldBeforeStep
     -- print width
     -- print world
-    -- mapM_ (printWorld 12 charOrder) (take 7 futureWorlds)
+    -- mapM_ (printWorld 150 charOrder) (take 7 futureWorlds)
     print . popCount . fromJust . M.lookup 'O' . worldLayers . (!!26501365) $ futureWorlds
