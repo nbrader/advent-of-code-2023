@@ -53,9 +53,6 @@ white = (255, 255, 255)
 # Set up clock for timing
 clock = pygame.time.Clock()
 
-# Number of points to plot
-num_points = 1000000  # Adjust this number to display more or fewer points
-
 # List to store points
 points = []
 
@@ -69,11 +66,10 @@ while running:
             running = False
 
     # Check if we need to add a new point
-    if point_index < num_points:
-        decoded_x, decoded_y = enum_pair_signed_inv(point_index)
-        point = transform_point(decoded_x, decoded_y, width, height)
-        points.append(point)
-        point_index += 1
+    decoded_x, decoded_y = enum_pair_signed_inv(point_index)
+    point = transform_point(decoded_x, decoded_y, width, height)
+    points.append(point)
+    point_index += 1
 
     # Draw the latest point and line
     if last_point:
