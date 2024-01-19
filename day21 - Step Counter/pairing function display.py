@@ -1,6 +1,7 @@
 import pygame
 import time
 
+# Python translations of Haskell functions
 def enum_pair_unsigned(x, y):
     return ((x + y + 1) * (x + y) // 2) + y
 
@@ -27,8 +28,18 @@ def enum_pair_signed_inv(n):
 
 # Function to scale and translate points to fit in the window
 def transform_point(x, y, width, height):
-    scale = 20  # Scale factor for better visualization
+    scale = 10  # Scale factor for better visualization
     return width // 2 + x * scale, height // 2 - y * scale
+
+# Function to get a changing color
+def get_color(index):
+    # This function will return a color based on the index
+    # We use the sine function to create a smooth transition effect
+    import math
+    r = int((math.sin(index * 0.05) + 1) * 127.5)
+    g = int((math.sin(index * 0.05 + 2) + 1) * 127.5)
+    b = int((math.sin(index * 0.05 + 4) + 1) * 127.5)
+    return (r, g, b)
 
 # Initialize Pygame
 pygame.init()
@@ -41,13 +52,12 @@ pygame.display.set_caption('Point Visualization')
 # Colors
 black = (0, 0, 0)
 white = (255, 255, 255)
-red = (255, 0, 0)
 
 # Set up clock for timing
 clock = pygame.time.Clock()
 
 # Number of points to plot
-num_points = 2000  # Adjust this number to display more or fewer points
+num_points = 1000000  # Adjust this number to display more or fewer points
 
 # List to store points
 points = []
@@ -70,16 +80,17 @@ while running:
 
     # Draw points and lines
     last_point = None
-    for point in points:
-        pygame.draw.circle(screen, white, point, 5)
+    for i, point in enumerate(points):
+        pygame.draw.circle(screen, white, point, 3)
         if last_point:
-            pygame.draw.line(screen, red, last_point, point, 2)
+            line_color = get_color(i)  # Get the changing color for the line
+            pygame.draw.line(screen, line_color, last_point, point, 2)
         last_point = point
 
     # Update display
     pygame.display.flip()
 
-    # Wait for a second
-    clock.tick(100)  # Adjust this number to change the speed of point addition
+    # Adjust the speed of point addition
+    clock.tick(100)
 
 pygame.quit()
