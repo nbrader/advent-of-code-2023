@@ -1,5 +1,6 @@
 import pygame
 import time
+import math
 
 # Python translations of Haskell functions
 def enum_pair_unsigned(x, y):
@@ -33,9 +34,6 @@ def transform_point(x, y, width, height):
 
 # Function to get a changing color
 def get_color(index):
-    # This function will return a color based on the index
-    # We use the sine function to create a smooth transition effect
-    import math
     r = int((math.sin(index * 0.05) + 1) * 127.5)
     g = int((math.sin(index * 0.05 + 2) + 1) * 127.5)
     b = int((math.sin(index * 0.05 + 4) + 1) * 127.5)
@@ -50,7 +48,6 @@ screen = pygame.display.set_mode((width, height))
 pygame.display.set_caption('Point Visualization')
 
 # Colors
-black = (0, 0, 0)
 white = (255, 255, 255)
 
 # Set up clock for timing
@@ -64,28 +61,27 @@ points = []
 
 # Main loop
 running = True
+last_point = None
+point_index = 0
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
-    # Fill background
-    screen.fill(black)
-
     # Check if we need to add a new point
-    if len(points) < num_points:
-        decoded_x, decoded_y = enum_pair_signed_inv(len(points))
+    if point_index < num_points:
+        decoded_x, decoded_y = enum_pair_signed_inv(point_index)
         point = transform_point(decoded_x, decoded_y, width, height)
         points.append(point)
+        point_index += 1
 
-    # Draw points and lines
-    last_point = None
-    for i, point in enumerate(points):
-        pygame.draw.circle(screen, white, point, 3)
-        if last_point:
-            line_color = get_color(i)  # Get the changing color for the line
-            pygame.draw.line(screen, line_color, last_point, point, 2)
-        last_point = point
+    # Draw the latest point and line
+    if last_point:
+        line_color = get_color(point_index)  # Get the changing color for the line
+        pygame.draw.line(screen, line_color, last_point, points[-1], 2)
+    pygame.draw.circle(screen, white, points[-1], 3)  # Draw the latest point
+
+    last_point = points[-1]
 
     # Update display
     pygame.display.flip()
