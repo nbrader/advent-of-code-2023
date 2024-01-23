@@ -1,6 +1,8 @@
 #!/usr/bin/env stack
 -- stack --resolver lts-21.22 ghci --package QuickCheck-2.14.3
 
+{-# LANGUAGE ApplicativeDo #-}
+
 module Util where
 
 import Control.Applicative
@@ -110,12 +112,12 @@ peakSize n = floor ((sqrt (8*n+1) - 1)/2)
 case4 x = floor (x+1) `mod` 4
 
 m y = (1/8) * (2*y + 1)^2 - 1
-n y = 2*y^2 + 4*y
--- n/2 = y^2 + 2*y + 1 - 1
--- n/2 = (y + 1)^2 - 1
--- n/2 + 1 = (y + 1)^2
--- sqrt (n/2 + 1) = y + 1
-y n = floor $ sqrt (n/2 + 1) - 1
+n y = y^2 + 2*y
+-- n = y^2 + 2*y + 1 - 1
+-- n = (y + 1)^2 - 1
+-- n + 1 = (y + 1)^2
+-- sqrt (n + 1) = y + 1
+y n = floor $ sqrt (n + 1) - 1
 -- 2*n = y^2 + y
 
 o y = floor $ sqrt (y/2)
@@ -160,6 +162,36 @@ alternate  i = if i `mod` 2 == 0 then 1 else -1
 -- (0.91 secs, 648,120,712 bytes)
 
 -- define intermediateH1 and intermediateH2 using intermediateB12, intermediateC1, intermediateC2, intermediateG1 and intermediateG2
+intermediateH1Attempt1 :: [Int]
+intermediateH1Attempt1 = getZipList $ do
+    a <- (\x -> x) <$> ZipList intermediateG1
+    b <- (\x -> (x-1)) <$> ZipList intermediateB12
+    return $ alternate a
+    -- return $ abs $ a - b
+
+intermediateN1  = map (\n -> let x = floor $ sqrt (n + 1) - 1 in x) [0..]
+intermediateJ1  = map (\n -> let x = floor $ sqrt (n + 1) - 1 in 2*(x+1)+1) [0..]
+-- intermediateJ1  = [   3,    3,     3,    5,    5,   5,    5,    5,    7,    7,    7,    7,    7,    7,    7,    9,    9,    9,    9,    9]
+intermediateK2  = getZipList $ do
+    q <- ZipList intermediateM1
+    i <- ZipList [0..]
+    return $ i - q
+-- intermediateK2  = [   0,    1,     2,    0,    1,   2,    3,    4,    0,    1,    2,    3,    4,    5,    6,    0,    1,    2,    3,    4]
+intermediateL2  = [0..]
+-- intermediateL2  = [   0,    1,     2,    3,    4,   5,    6,    7,    8,    9,   10,   11,   12,   13,   14,   15,   16,   17,   18,   19]
+intermediateM1  = map (\n -> let x = floor $ sqrt (n + 1) - 1 in (x+1)^2-1) [0..]
+
+intermediateI1 = getZipList $ do
+    x <- ZipList intermediateN1
+    i <- ZipList intermediateK2
+    return $ let q = 2*(x+1)+1 in if i `div` ((q+1) `div` 2) == 0 then i else q-i
+-- intermediateI1  = [  0,  1,  1,  0,  1,  2,  2,  1,  0,  1,  2,  3,  3,  2,  1,  0,  1,  2,  3,  4]
+intermediateI2 = getZipList $ do
+    x <- ZipList intermediateN1
+    i <- ZipList intermediateK2
+    return $ abs $ (x+1)-i
+-- intermediateI2  = [  1,  0,  1,  2,  1,  0,  1,  2,  3,  2,  1,  0,  1,  2,  3,  4,  3,  2,  1,  0]
+
 intermediateH1  = [  0,  0,  0,  1,  1,  1,  1,  0,  0,  1,  1,  2,  2,  2,  2,  1,  1,  0,  0,  1,  1,  2,  2,  3,  3,  3,  3,  2,  2,  1,  1,  0,  0,  1,  1,  2,  2,  3,  3,  4,  4]
 intermediateH2  = [  0,  1,  1,  0,  0,  1,  1,  2,  2,  1,  1,  0,  0,  1,  1,  2,  2,  3,  3,  2,  2,  1,  1,  0,  0,  1,  1,  2,  2,  3,  3,  4,  4,  3,  3,  2,  2,  1,  1,  0,  0]
 
