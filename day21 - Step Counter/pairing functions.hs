@@ -189,8 +189,62 @@ target1         = getZipList $ (*) <$> ZipList intermediateH1 <*> ZipList interm
 target2         = getZipList $ (*) <$> ZipList intermediateH2 <*> ZipList intermediateF2
 -- target2         = [  0,  1,- 1,  0,  0,- 1,  1,- 2,  2,- 1,  1,  0,  0,  1,- 1,  2,- 2,  3,- 3,  2,- 2,  1,- 1,  0,  0,- 1,  1,- 2,  2,- 3,  3,- 4,  4,- 3,  3,- 2,  2,- 1,  1,  0,  0]
 
+intermediateI1F :: Int -> Int
+intermediateI1F n = if i `div` ((q+1) `div` 2) == 0 then i else q-i
+  where x = intermediateN1F n
+        i = intermediateK2F n
+        q = 2*(x+1)+1
+
+intermediateI2F :: Int -> Int
+intermediateI2F n = abs $ (x+1)-i
+  where x = intermediateN1F n
+        i = intermediateK2F n
+
+intermediateIF :: Int -> (Int, Int)
+intermediateIF n = (if i `div` ((q+1) `div` 2) == 0 then i else q-i, abs $ (x+1)-i)
+  where x = floor $ sqrt (fromInt n + 1) - 1
+        i = n - ((x+1)^2-1)
+        q = 2*(x+1)+1
+
+intermediateIF' :: Int -> (Int, Int)
+intermediateIF' 0 = (0,0)
+intermediateIF' n = (alt11 * alt12 * if i `div` ((q+1) `div` 2) == 0 then i else q-i, alt21 * alt22 * (abs $ (x+1)-i))
+  where x = floor $ sqrt ((fromInt (n-1))/2 + 1) - 1
+        i = floor ((fromInt (n-1))/2) - ((x+1)^2-1)
+        q = 2*(x+1)+1
+        alt11 = alternate n
+        alt12 = alternate $ floor $ sqrt ((fromInt n-1)/2 + 1)
+        
+        alt21 = alternate (n+1)
+        alt22 = alternate $ floor $ sqrt ((fromInt n-1)/2 + 5/4) - 1/2
+
+intermediateF1F :: Int -> Int
+intermediateF1F n = alt1 * alt2
+  where alt1 = alternate n
+        alt2 = alternate $ floor $ sqrt ((fromInt n-1)/2 + 1)
+
+intermediateD1F n = alternate n
+intermediateE1F  = alternate . intermediateG1F
+intermediateG1F n = floor $ sqrt ((fromInt n-1)/2 + 1)
+
+intermediateN1F, intermediateK2F, intermediateM1F :: Int -> Int
+intermediateN1F n = let y = floor $ sqrt (fromInt n + 1) - 1 in y
+intermediateK2F n = n - intermediateM1F n
+intermediateM1F n = let y = floor $ sqrt (fromInt n + 1) - 1 in (y+1)^2-1
 
 -- attempt1 = ZipList 
 attempt2 = xs
   where xs = getZipList $ (*) <$> ZipList target2 <*> ZipList intermediateF2
+
+success :: Int -> (Int, Int)
+success' 0 = (0,0)
+success n = (alt11 * alt12 * if i `div` ((q+1) `div` 2) == 0 then i else q-i, alt21 * alt22 * (abs $ (x+1)-i))
+  where x = floor $ sqrt ((fromInt (n-1))/2 + 1) - 1
+        i = floor ((fromInt (n-1))/2) - ((x+1)^2-1)
+        q = 2*(x+1)+1
+        alt11 = alternate n
+        alt12 = alternate $ floor $ sqrt ((fromInt n-1)/2 + 1)
+        
+        alt21 = alternate (n+1)
+        alt22 = alternate $ floor $ sqrt ((fromInt n-1)/2 + 5/4) - 1/2
         
