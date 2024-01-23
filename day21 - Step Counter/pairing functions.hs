@@ -162,23 +162,12 @@ alternate  i = if i `mod` 2 == 0 then 1 else -1
 -- (0.91 secs, 648,120,712 bytes)
 
 -- define intermediateH1 and intermediateH2 using intermediateB12, intermediateC1, intermediateC2, intermediateG1 and intermediateG2
-intermediateH1Attempt1 :: [Int]
-intermediateH1Attempt1 = getZipList $ do
-    a <- (\x -> x) <$> ZipList intermediateG1
-    b <- (\x -> (x-1)) <$> ZipList intermediateB12
-    return $ alternate a
-    -- return $ abs $ a - b
-
 intermediateN1  = map (\n -> let x = floor $ sqrt (n + 1) - 1 in x) [0..]
-intermediateJ1  = map (\n -> let x = floor $ sqrt (n + 1) - 1 in 2*(x+1)+1) [0..]
--- intermediateJ1  = [   3,    3,     3,    5,    5,   5,    5,    5,    7,    7,    7,    7,    7,    7,    7,    9,    9,    9,    9,    9]
 intermediateK2  = getZipList $ do
     q <- ZipList intermediateM1
     i <- ZipList [0..]
     return $ i - q
 -- intermediateK2  = [   0,    1,     2,    0,    1,   2,    3,    4,    0,    1,    2,    3,    4,    5,    6,    0,    1,    2,    3,    4]
-intermediateL2  = [0..]
--- intermediateL2  = [   0,    1,     2,    3,    4,   5,    6,    7,    8,    9,   10,   11,   12,   13,   14,   15,   16,   17,   18,   19]
 intermediateM1  = map (\n -> let x = floor $ sqrt (n + 1) - 1 in (x+1)^2-1) [0..]
 
 intermediateI1 = getZipList $ do
