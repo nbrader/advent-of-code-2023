@@ -109,17 +109,33 @@ fromInt = fromInteger . toInteger
 peakSize n = floor ((sqrt (8*n+1) - 1)/2)
 case4 x = floor (x+1) `mod` 4
 
-n y = (1/8) * (2*y + 1)^2 - 1
+m y = (1/8) * (2*y + 1)^2 - 1
+n y = 2*y^2 + 4*y
+-- n/2 = y^2 + 2*y + 1 - 1
+-- n/2 = (y + 1)^2 - 1
+-- n/2 + 1 = (y + 1)^2
+-- sqrt (n/2 + 1) = y + 1
+y n = floor $ sqrt (n/2 + 1) - 1
+-- 2*n = y^2 + y
+
+o y = floor $ sqrt (y/2)
+-- map n [0..2] :: [Rational]
+-- [(-7) % 8,1 % 8,17 % 8]
 
 intermediateA12 = [0..]
 -- intermediateA12 = [  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40]
 
 -- Make the following using flooring of inverse quadratics in the same was as was done with peakSize from (1/8) * (2*y + 1)^2 - 1 which has differences between values at integers of [1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0] and use them to define intermediateH1 and intermediateH2
-intermediateB12 = [  0,  1,  1,  2,  2,  3,  3,  4,  4,  5,  5,  6,  6,  7,  7,  8,  8,  9,  9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20]
-intermediateC1  = [  0,  1,  1,  2,  2,  2,  2,  2,  2,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  5,  5,  5,  5,  5,  5,  5,  5]
-intermediateC2  = [  0,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,  2,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4]
-intermediateG1  = [  0,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4]
-intermediateG2  = [  0,  0,  0,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  4,  4]
+intermediateB12 =     map (\n -> floor (n/2 + 1/2))              [0..]
+-- intermediateB12 = [  0,  1,  1,  2,  2,  3,  3,  4,  4,  5,  5,  6,  6,  7,  7,  8,  8,  9,  9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19, 19, 20, 20]
+intermediateC1  = 0 : map (\n -> floor $ sqrt (n/2) + 1)         [0..]
+-- intermediateC1  = [  0,  1,  1,  2,  2,  2,  2,  2,  2,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  5,  5,  5,  5,  5,  5,  5,  5]
+intermediateC2  = 0 : map (\n -> floor $ sqrt (n/2 + 1/4) + 1/2) [0..]
+-- intermediateC2  = [  0,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,  2,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4]
+intermediateG1  = 0 : map (\n -> floor $ sqrt (n/2 + 1))         [0..]
+-- intermediateG1  = [  0,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4]
+intermediateG2  = 0 : map (\n -> floor $ sqrt (n/2 + 5/4) - 1/2) [0..]
+-- intermediateG2  = [  0,  0,  0,  1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  4,  4]
 
 intermediateD1 = alternate        <$> [0..]
 -- intermediateD12 = [  1,- 1,  1,- 1,  1,- 1,  1,- 1,  1,- 1,  1,- 1,  1,- 1,  1,- 1,  1,- 1,  1,- 1,  1,- 1,  1,- 1,  1,- 1,  1,- 1,  1,- 1,  1,- 1,  1,- 1,  1,- 1,  1,- 1,  1,- 1,  1]
@@ -134,7 +150,14 @@ intermediateF1  = getZipList $ (*) <$> ZipList intermediateD1 <*> ZipList interm
 intermediateF2  = getZipList $ (*) <$> ZipList intermediateD2 <*> ZipList intermediateE2
 -- intermediateF2  = [- 1,  1,- 1,- 1,  1,- 1,  1,- 1,  1,- 1,  1,  1,- 1,  1,- 1,  1,- 1,  1,- 1,  1,- 1,  1,- 1,- 1,  1,- 1,  1,- 1,  1,- 1,  1,- 1,  1,- 1,  1,- 1,  1,- 1,  1,  1,- 1]
 
-alternate i = if i `mod` 2 == 0 then 1 else -1
+alternate  i = if i `mod` 2 == 0 then 1 else -1
+-- alternate' i = sin (pi * (1/2 + i))
+-- sum . take 1000000 $ map alternate [0..]
+-- 0
+-- (0.74 secs, 516,118,688 bytes)
+-- ghci> sum . take 1000000 $ map alternate' [0..]
+-- 0.0
+-- (0.91 secs, 648,120,712 bytes)
 
 -- define intermediateH1 and intermediateH2 using intermediateB12, intermediateC1, intermediateC2, intermediateG1 and intermediateG2
 intermediateH1  = [  0,  0,  0,  1,  1,  1,  1,  0,  0,  1,  1,  2,  2,  2,  2,  1,  1,  0,  0,  1,  1,  2,  2,  3,  3,  3,  3,  2,  2,  1,  1,  0,  0,  1,  1,  2,  2,  3,  3,  4,  4]
