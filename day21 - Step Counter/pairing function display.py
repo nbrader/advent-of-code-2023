@@ -29,7 +29,7 @@ def enum_pair_signed_inv(n):
 
 # Function to scale and translate points to fit in the window
 def transform_point(x, y, width, height):
-    scale = 10  # Scale factor for better visualization
+    scale = 4  # Scale factor for better visualization
     return width // 2 + x * scale, height // 2 - y * scale
 
 # Function to get a changing color
@@ -71,12 +71,13 @@ def main():
         point = transform_point(decoded_x, decoded_y, width, height)
         points.append(point)
         point_index += 1
+        print(point_index)
 
         # Draw the latest point and line
-        if last_point:
-            line_color = get_color(point_index)  # Get the changing color for the line
-            pygame.draw.line(screen, line_color, last_point, points[-1], 2)
-        pygame.draw.circle(screen, white, points[-1], 3)  # Draw the latest point
+        # if last_point:
+            # line_color = get_color(point_index)  # Get the changing color for the line
+            # pygame.draw.line(screen, line_color, last_point, points[-1], 2)
+        pygame.draw.circle(screen, white, points[-1], 1)  # Draw the latest point
 
         last_point = points[-1]
 
@@ -84,7 +85,7 @@ def main():
         pygame.display.flip()
 
         # Adjust the speed of point addition
-        clock.tick(100)
+        clock.tick(100000000)
 
     pygame.quit()
 
