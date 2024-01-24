@@ -39,50 +39,53 @@ def get_color(index):
     b = int((math.sin(index * 0.05 + 4) + 1) * 127.5)
     return (r, g, b)
 
-# Initialize Pygame
-pygame.init()
+def main():
+    # Initialize Pygame
+    pygame.init()
 
-# Window settings
-width, height = 1024, 1024
-screen = pygame.display.set_mode((width, height))
-pygame.display.set_caption('Point Visualization')
+    # Window settings
+    width, height = 1024, 1024
+    screen = pygame.display.set_mode((width, height))
+    pygame.display.set_caption('Point Visualization')
 
-# Colors
-white = (255, 255, 255)
+    # Colors
+    white = (255, 255, 255)
 
-# Set up clock for timing
-clock = pygame.time.Clock()
+    # Set up clock for timing
+    clock = pygame.time.Clock()
 
-# List to store points
-points = []
+    # List to store points
+    points = []
 
-# Main loop
-running = True
-last_point = None
-point_index = 0
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+    # Main loop
+    running = True
+    last_point = None
+    point_index = 0
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
 
-    # Check if we need to add a new point
-    decoded_x, decoded_y = enum_pair_signed_inv(point_index)
-    point = transform_point(decoded_x, decoded_y, width, height)
-    points.append(point)
-    point_index += 1
+        # Check if we need to add a new point
+        decoded_x, decoded_y = enum_pair_signed_inv(point_index)
+        point = transform_point(decoded_x, decoded_y, width, height)
+        points.append(point)
+        point_index += 1
 
-    # Draw the latest point and line
-    if last_point:
-        line_color = get_color(point_index)  # Get the changing color for the line
-        pygame.draw.line(screen, line_color, last_point, points[-1], 2)
-    pygame.draw.circle(screen, white, points[-1], 3)  # Draw the latest point
+        # Draw the latest point and line
+        if last_point:
+            line_color = get_color(point_index)  # Get the changing color for the line
+            pygame.draw.line(screen, line_color, last_point, points[-1], 2)
+        pygame.draw.circle(screen, white, points[-1], 3)  # Draw the latest point
 
-    last_point = points[-1]
+        last_point = points[-1]
 
-    # Update display
-    pygame.display.flip()
+        # Update display
+        pygame.display.flip()
 
-    # Adjust the speed of point addition
-    clock.tick(100)
+        # Adjust the speed of point addition
+        clock.tick(100)
 
-pygame.quit()
+    pygame.quit()
+
+main()
