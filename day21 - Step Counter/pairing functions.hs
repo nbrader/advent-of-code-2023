@@ -242,7 +242,7 @@ attempt2 = xs
 success :: Int -> (Int, Int)
 success 0 = (0,0)
 success n = (alt11 * alt12 * if i `div` ((q+1) `shiftR` 1) == 0 then i else q-i, -alt11 * alt22 * (abs $ (x+1)-i))
-  where x = floor $ sqrt ((fromInt (n-1))/2 + 1) - 1
+  where x = floor $ sqrt ((fromInt n-1)/2 + 1) - 1
         i = ((n-1) `div` 2) - ((x+1)^2-1)
         q = 2*(x+1)+1
         alt11 = alternate n
@@ -256,7 +256,7 @@ success n = (alt11 * alt12 * if i `div` ((q+1) `shiftR` 1) == 0 then i else q-i,
 success' :: Int -> (Int, Int)
 success' 0 = (0,0)
 success' n = (alt11 * alt12 * if i `div` ((q+1) `shiftR` 1) == 0 then i else q-i, -alt11 * alt22 * (abs $ (x+1)-i))
-  where x = floor $ sqrt ((fromInt (n-1))/2 + 1) - 1
+  where x = floor $ sqrt ((fromInt n-1)/2 + 1) - 1
         i = ((n-1) `div` 2) - ((x+1)^2-1)
         q = 2*(x+1)+1
         alt11 = alternate n
