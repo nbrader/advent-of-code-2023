@@ -6,9 +6,59 @@
 module Util where
 
 import Control.Applicative
-import Test.QuickCheck
+-- import Test.QuickCheck
 import Data.Bits
 import Data.List
+
+-- A pairing function for signed integers
+signedPairing :: (Integer, Integer) -> Integer
+signedPairing (i, j) = pairing (inverseEnumSigned' i, inverseEnumSigned' j)
+
+-- Please find corresponding inverses to these functions
+-- An unpairing function for signed integers
+signedUnpairing :: Integer -> (Integer, Integer)
+signedUnpairing z = let (i, j) = unpairing z
+                    in (enumSigned' i, enumSigned' j)
+
+enumSigned' :: Integer -> Integer
+enumSigned' z = let absZ =  z+1
+                    signZ = absZ .&. 1
+                    i = (absZ `shiftR` 1) * if signZ == 0 then 1 else -1
+                in i
+
+inverseEnumSigned' i = if i <= 0 then -2*i else 2*i-1
+
+-- The original pairing function, updated to work with absolute values and sign bits
+pairing :: (Integer, Integer) -> Integer
+pairing (i, j) = if i == 0 && j == 0 then 0 else
+                  let i0 = i .&. 1
+                      j0 = j .&. 1
+                      nextPair = pairing (i `shiftR` 1, j `shiftR` 1)
+                  in (i0 .|. (j0 `shiftL` 1)) .|. (nextPair `shiftL` 2)
+
+-- The original unpairing function, used as is
+unpairing :: Integer -> (Integer, Integer)
+unpairing z = unpair z 0 0 0
+  where
+    unpair 0 _ i j = (i, j)
+    unpair n bit i j = let iBit = n .&. 1
+                           jBit = (n `shiftR` 1) .&. 1
+                           newI = i .|. (iBit `shiftL` bit)
+                           newJ = j .|. (jBit `shiftL` bit)
+                       in unpair (n `shiftR` 2) (bit + 1) newI newJ
+
+-- A function to calculate the length of the pairing function result
+pairLength :: Integer -> Integer -> Integer
+pairLength i j = 2 * (integerLog2 $ max i j)
+
+-- Helper function to calculate the log base 2 of an Integer
+integerLog2 :: Integer -> Integer
+integerLog2 0 = error "log2 of 0"
+integerLog2 n = go n 0
+  where
+    go 1 acc = acc
+    go x acc = go (x `shiftR` 1) (acc + 1)
+
 
 enumPairUnsigned :: (Int,Int) -> Int
 enumPairUnsigned (x,y) = ((x+y+1)*(x+y) `div` 2) + y
