@@ -40,14 +40,14 @@ def signed_unpairing(z):
 
 # Function to scale and translate points to fit in the window
 def transform_point(x, y, width, height):
-    scale = 4  # Scale factor for better visualization
+    scale = 2  # Scale factor for better visualization
     return width // 2 + x * scale, height // 2 - y * scale
 
 # Function to get a changing color
 def get_color(index):
-    r = int((math.sin(index * 0.05) + 1) * 127.5)
-    g = int((math.sin(index * 0.05 + 2) + 1) * 127.5)
-    b = int((math.sin(index * 0.05 + 4) + 1) * 127.5)
+    r = int((math.sin(index * 0.001) + 1) * 127.5)
+    g = int((math.sin(index * 0.001 + 2) + 1) * 127.5)
+    b = int((math.sin(index * 0.001 + 4) + 1) * 127.5)
     return (r, g, b)
 
 def main():
@@ -62,8 +62,8 @@ def main():
     # Colors
     white = (255, 255, 255)
 
-    # Set up clock for timing
-    clock = pygame.time.Clock()
+    # # Set up clock for timing
+    # clock = pygame.time.Clock()
 
     # List to store points
     points = []
@@ -82,20 +82,20 @@ def main():
         point = transform_point(decoded_x, decoded_y, width, height)
         points.append(point)
         point_index += 1
-
+        
+        line_color = get_color(point_index)  # Get the changing color for the line
         # Draw the latest point and line
         # if last_point:
-        #     line_color = get_color(point_index)  # Get the changing color for the line
         #     pygame.draw.line(screen, line_color, last_point, points[-1], 2)
-        pygame.draw.circle(screen, white, points[-1], 1)  # Draw the latest point
+        pygame.draw.circle(screen, ((point_index-1)*(point_index+1)) % (256*256*256), points[-1], 1)  # Draw the latest point
 
         last_point = points[-1]
 
         # Update display
         pygame.display.flip()
 
-        # Adjust the speed of point addition
-        clock.tick(100000000)
+        # # Adjust the speed of point addition
+        # clock.tick(1000000000000000000000000000)
 
     pygame.quit()
 
