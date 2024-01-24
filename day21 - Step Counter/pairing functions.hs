@@ -243,7 +243,7 @@ success :: Int -> (Int, Int)
 success 0 = (0,0)
 success n = (alt11 * alt12 * if i `div` ((q+1) `shiftR` 1) == 0 then i else q-i, -alt11 * alt22 * (abs $ (x+1)-i))
   where x = floor $ sqrt ((fromInt n-1)/2 + 1) - 1
-        i = ((n-1) `div` 2) - ((x+1)^2-1)
+        i = ((n-1) `shiftR` 1) - ((x+1)^2-1)
         q = 2*(x+1)+1
         alt11 = alternate n
         alt12 = alternate $ floor $ sqrt ((fromInt n-1)/2 + 1)
@@ -251,13 +251,13 @@ success n = (alt11 * alt12 * if i `div` ((q+1) `shiftR` 1) == 0 then i else q-i,
 -- ghci> :set +s
 -- ghci> sum $ map ((\(x,y) -> x + y) . success) [0..1000000]
 -- 0
--- (12.02 secs, 7,441,234,728 bytes)
+-- (11.73 secs, 7,441,239,488 bytes)
 
 success' :: Int -> (Int, Int)
 success' 0 = (0,0)
 success' n = (alt11 * alt12 * if i `div` ((q+1) `shiftR` 1) == 0 then i else q-i, -alt11 * alt22 * (abs $ (x+1)-i))
   where x = floor $ sqrt ((fromInt n-1)/2 + 1) - 1
-        i = ((n-1) `div` 2) - ((x+1)^2-1)
+        i = ((n-1) `shiftR` 1) - ((x+1)^2-1)
         q = 2*(x+1)+1
         alt11 = alternate n
         alt12 = alternate $ floor $ sqrt ((fromInt n-1)/2 + 1)
