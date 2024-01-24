@@ -8,6 +8,7 @@ module Util where
 import Control.Applicative
 import Test.QuickCheck
 import Data.Bits
+import Data.List
 
 enumPairUnsigned :: (Int,Int) -> Int
 enumPairUnsigned (x,y) = ((x+y+1)*(x+y) `div` 2) + y
@@ -240,30 +241,26 @@ attempt2 = xs
 
 success :: Int -> (Int, Int)
 success 0 = (0,0)
-success n = (alt11 * alt12 * if i `div` ((q+1) `shiftR` 1) == 0 then i else q-i, alt21 * alt22 * (abs $ (x+1)-i))
+success n = (alt11 * alt12 * if i `div` ((q+1) `shiftR` 1) == 0 then i else q-i, -alt11 * alt22 * (abs $ (x+1)-i))
   where x = floor $ sqrt ((fromInt (n-1))/2 + 1) - 1
         i = ((n-1) `div` 2) - ((x+1)^2-1)
         q = 2*(x+1)+1
         alt11 = alternate n
         alt12 = alternate $ floor $ sqrt ((fromInt n-1)/2 + 1)
-        
-        alt21 = alternate (n+1)
         alt22 = alternate $ floor $ sqrt ((fromInt n-1)/2 + 5/4) - 1/2
 -- ghci> :set +s
 -- ghci> sum $ map ((\(x,y) -> x + y) . success) [0..1000000]
 -- 0
--- (13.37 secs, 8,045,234,720 bytes)
+-- (12.02 secs, 7,441,234,728 bytes)
 
 success' :: Int -> (Int, Int)
 success' 0 = (0,0)
-success' n = (alt11 * alt12 * if i `div` ((q+1) `shiftR` 1) == 0 then i else q-i, alt21 * alt22 * (abs $ (x+1)-i))
+success' n = (alt11 * alt12 * if i `div` ((q+1) `shiftR` 1) == 0 then i else q-i, -alt11 * alt22 * (abs $ (x+1)-i))
   where x = floor $ sqrt ((fromInt (n-1))/2 + 1) - 1
         i = ((n-1) `div` 2) - ((x+1)^2-1)
         q = 2*(x+1)+1
         alt11 = alternate n
         alt12 = alternate $ floor $ sqrt ((fromInt n-1)/2 + 1)
-        
-        alt21 = alternate (n+1)
         alt22 = alternate $ floor $ sqrt ((fromInt n-1)/2 + 5/4) - 1/2
 -- ghci> :set +s
 -- ghci> sum $ map ((\(x,y) -> x + y) . success') [0..1000000]
@@ -276,3 +273,10 @@ prop_success_comp x = success x == success' x
 -- quickCheck prop_success_comp
 -- +++ OK, passed 100 tests.
 -- (0.00 secs, 750,520 bytes)
+
+test1 = map (\n -> alternate n) [0..50]
+test2 = map (\n -> alternate $ floor $ sqrt ((fromInt n-1)/2 + 1)) [0..50]
+test3 = map (\n -> alternate (n+1)) [0..50]
+test4 = map (\n -> alternate $ floor $ sqrt ((fromInt n-1)/2 + 5/4) - 1/2) [0..50]
+
+tests = [test1, test2, test3, test4]
