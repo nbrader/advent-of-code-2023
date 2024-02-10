@@ -330,3 +330,45 @@ test3 = map (\n -> alternate (n+1)) [0..50]
 test4 = map (\n -> alternate $ floor $ sqrt ((fromInt n-1)/2 + 5/4) - 1/2) [0..50]
 
 tests = [test1, test2, test3, test4]
+
+
+szudzikPair :: (Int,Int) -> Int
+szudzikPair (x, y) = if x /= max x y
+                      then y * y + x
+                      else x * x + x + y
+
+szudzikUnpair :: Int -> (Int,Int)
+szudzikUnpair z = if z - sqz < sqrtz
+                   then (z - sqz, sqrtz)
+                   else (sqrtz, z - sqz - sqrtz)
+  where sqrtz = floor (sqrt $ fromInt z)
+        sqz = sqrtz * sqrtz
+
+signedSzudzikPair :: (Int,Int) -> Int
+signedSzudzikPair (x, y) = szudzikPair (inverseSignedBitwiseEnum x, inverseSignedBitwiseEnum y)
+
+signedSzudzikUnpair :: Int -> (Int,Int) 
+signedSzudzikUnpair z = let (x,y) = szudzikUnpair z
+                        in (signedBitwiseEnum x, signedBitwiseEnum y)
+
+rosenbergStrongPair :: (Int,Int) -> Int
+rosenbergStrongPair (x, y) = m*m + m + x - y
+  where m = max x y
+
+rosenbergStrongUnpair :: Int -> (Int,Int)
+rosenbergStrongUnpair z = if z - sqrtz*sqrtz < sqrtz
+                            then (z-sqrtz*sqrtz, sqrtz)
+                            else (sqrtz,sqrtz*sqrtz + 2*sqrtz - z)
+  where sqrtz = floor (sqrt $ fromInt z)
+
+-- signedBitwiseEnum function
+signedBitwiseEnum :: Int -> Int
+signedBitwiseEnum z =
+  let absZ = z + 1
+      signZ = absZ .&. 1
+  in (shiftR absZ 1) * if signZ == 0 then 1 else -1
+
+-- inverseSignedBitwiseEnum function
+inverseSignedBitwiseEnum :: Int -> Int
+inverseSignedBitwiseEnum i =
+  if i <= 0 then -2 * i else 2 * i - 1
