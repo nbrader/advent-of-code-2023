@@ -1,5 +1,5 @@
 #!/usr/bin/env stack
--- stack --resolver lts-21.22 ghci --package containers-0.6.7 --package linear-1.22 --package split-0.2.3.5 --package parallel-3.2.2.0
+-- stack --resolver lts-21.22 ghci --package split-0.2.3.5 --package parallel-3.2.2.0
 
 --------------------------------
 --------------------------------
@@ -8,14 +8,14 @@
 --------------------------------
 {-
     To build, run the following shell command in this directory:
-        stack --resolver lts-21.22 ghc --package containers-0.6.7 --package linear-1.22 -- -threaded -O2 '.\day12.hs'
+        stack --resolver lts-21.22 ghc --package split-0.2.3.5 --package parallel-3.2.2.0 -- -threaded -O2 '.\day12.hs'
 -}
 
 ------------
 -- Output --
 ------------
 -- *Main> day12part1
--- 
+-- 6488
 
 -- *Main> day12part2
 -- 
@@ -24,13 +24,8 @@
 -------------
 -- Imports --
 -------------
-import Data.List (foldl', nub, sort, transpose, isPrefixOf, findIndex, intercalate)
+import Data.List (intercalate)
 import Data.List.Split (splitOn)
-import qualified Data.Map as M
-import Data.Maybe (fromJust, maybeToList, catMaybes)
-import Linear.V2
-import Control.Monad (guard)
-import Debug.Trace (trace)
 import Control.Parallel.Strategies
 
 

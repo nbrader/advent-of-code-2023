@@ -1,5 +1,5 @@
 #!/usr/bin/env stack
--- stack --resolver lts-22.0 ghci --package containers-0.6.7 --package linear-1.22 --package split-0.2.4 --package parallel-3.2.2.0 --package array-0.5.5.0 --package search-algorithms-0.3.2 --package unordered-containers-0.2.19.1 --package hashable-1.4.3.0
+-- stack --resolver lts-22.0 ghci --package linear-1.22 --package array-0.5.5.0 --package search-algorithms-0.3.2 --package unordered-containers-0.2.19.1 --package hashable-1.4.3.0
 
 ------------------------------------
 ------------------------------------
@@ -8,10 +8,7 @@
 ------------------------------------
 {-
     To build, run the following shell command in this directory:
-        stack --resolver lts-22.0 ghc --package containers-0.6.7 --package linear-1.22 --package split-0.2.4 --package parallel-3.2.2.0 --package array-0.5.5.0 --package search-algorithms-0.3.2 --package unordered-containers-0.2.19.1 --package hashable-1.4.3.0 -- -threaded -O2 '.\day17.hs'
-        
-    For multi-core, use the following (replacing N4 with desired number of cores):
-        ./day17 +RTS -N4
+        stack --resolver lts-22.0 ghc --package linear-1.22 --package array-0.5.5.0 --package search-algorithms-0.3.2 --package unordered-containers-0.2.19.1 --package hashable-1.4.3.0 -- -O2 '.\day17.hs'
 -}
 
 ------------
@@ -27,30 +24,12 @@
 -------------
 -- Imports --
 -------------
--- import Data.List (
-    -- foldl', nub, sort, transpose, isPrefixOf, findIndex, findIndices,
-    -- intercalate, reverse, partition, intersperse, scanl', deleteBy)
-import Data.List.Split (splitOn, chunksOf)
-import qualified Data.Map as M
-import Data.Maybe (fromJust, maybeToList, catMaybes)
 import Linear hiding (trace)
-import qualified Linear
-import Linear.V2
 import Control.Monad (guard)
-import Debug.Trace (trace)
-import Control.Parallel.Strategies
-import Data.Bits
-import Data.Char
-import qualified Data.Set as S
 import Data.HashSet as H
 import Algorithm.Search
-import Data.List as L (sort, intersperse, foldl', findIndex, map, delete, null, concatMap, minimumBy, filter, transpose)
-import Data.Maybe (fromJust, isJust)
+import Data.List as L (map, filter, transpose)
 import Data.Array as A (Array, (!), listArray)
-import Data.Char (ord)
-import Control.Monad (guard)
-import Data.Ix
-import Debug.Trace
 import Data.Hashable
 
 

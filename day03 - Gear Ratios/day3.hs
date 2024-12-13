@@ -26,7 +26,7 @@
 -------------
 import Data.Char (isDigit)
 import Data.List (groupBy, nub)
-import Data.Maybe (maybeToList, fromJust)
+import Data.Maybe (maybeToList)
 import Data.Map as M hiding (map, filter, take)
 import Linear.V2
 import Data.Function (on)

@@ -24,7 +24,6 @@
 -------------
 -- Imports --
 -------------
-import Data.List (lookup)
 import Data.List.Split (splitOn)
 import Data.Maybe (fromMaybe)
 

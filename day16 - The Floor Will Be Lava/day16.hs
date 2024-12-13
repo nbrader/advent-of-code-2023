@@ -1,5 +1,5 @@
 #!/usr/bin/env stack
--- stack --resolver lts-21.22 ghci --package containers-0.6.7 --package linear-1.22 --package split-0.2.3.5 --package parallel-3.2.2.0
+-- stack --resolver lts-21.22 ghci --package containers-0.6.7 --package linear-1.22 --package parallel-3.2.2.0
 
 -------------------------------------------
 -------------------------------------------
@@ -8,7 +8,7 @@
 -------------------------------------------
 {-
     To build, run the following shell command in this directory:
-        stack --resolver lts-21.22 ghc --package containers-0.6.7 --package linear-1.22 -- -threaded -O2 '.\day16.hs'
+        stack --resolver lts-21.22 ghc --package containers-0.6.7 --package linear-1.22 --package parallel-3.2.2.0 -- -threaded -O2 '.\day16.hs'
         
     For multi-core, use the following (replacing N4 with desired number of cores):
         ./day16 +RTS -N4
@@ -27,19 +27,11 @@
 -------------
 -- Imports --
 -------------
-import Data.List (
-    foldl', nub, sort, transpose, isPrefixOf, findIndex, findIndices,
-    intercalate, reverse, partition, intersperse, scanl', deleteBy)
-import Data.List.Split (splitOn, chunksOf)
-import Data.Maybe (fromJust, maybeToList, catMaybes)
+import Data.List (transpose, reverse)
 import Linear ((*^))
-import qualified Linear
 import Linear.V2
-import Control.Monad (guard)
 import Debug.Trace (trace)
 import Control.Parallel.Strategies
-import Data.Bits
-import Data.Char
 import qualified Data.Set as S
 
 

@@ -24,11 +24,10 @@
 -------------
 -- Imports --
 -------------
-import Data.List (foldl', nub, sort)
+import Data.List (foldl', nub)
 import qualified Data.Map as M
-import Data.Maybe (fromJust, maybeToList)
+import Data.Maybe (maybeToList)
 import Linear.V2
-import Debug.Trace (trace)
 
 
 -------------

@@ -1,12 +1,11 @@
 #!/usr/bin/env stack
--- stack --resolver lts-21.22 ghci --package containers-0.6.7 --package split-0.2.3.5 --package safe-0.3.19
+-- stack --resolver lts-21.22 ghci --package containers-0.6.7 --package split-0.2.3.5 --package safe-0.3.19 --package QuickCheck-2.14.3
 
 module WalkableRepTilesWorldOptimised (WalkableRepTilesWorldOptimised(WalkableRepTilesWorldOptimised)) where
 
 -------------
 -- Imports --
 -------------
-import Data.List (findIndex)
 import qualified Data.Set as S
 import Data.Maybe (fromJust)
 import Data.Ord

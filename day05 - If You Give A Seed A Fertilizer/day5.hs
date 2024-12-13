@@ -26,7 +26,7 @@
 -------------
 import Data.List (find, foldl')
 import Data.List.Split (splitOn, chunksOf)
-import Data.Map as M hiding (map, filter, take, drop, foldl')
+import Data.Map as M hiding (map, take, drop, foldl')
 
 
 -------------

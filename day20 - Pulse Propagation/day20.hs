@@ -1,5 +1,5 @@
 #!/usr/bin/env stack
--- stack --resolver lts-21.22 ghci --package containers-0.6.7 --package linear-1.22 --package split-0.2.3.5 --package deque-0.4.4.1
+-- stack --resolver lts-21.22 ghci --package containers-0.6.7 --package split-0.2.3.5 --package deque-0.4.4.1
 
 -------------------------------------
 -------------------------------------
@@ -8,32 +8,26 @@
 -------------------------------------
 {-
     To build, run the following shell command in this directory:
-        stack --resolver lts-21.22 ghc --package containers-0.6.7 --package linear-1.22 --package deque-0.4.4.1 -- '.\day20.hs' -O2
+        stack --resolver lts-21.22 ghc --package containers-0.6.7 --package split-0.2.3.5 --package deque-0.4.4.1 -- '.\day20.hs' -O2
 -}
 
 ------------
 -- Output --
 ------------
 -- *Main> day20part1
--- 
+-- 814934624
 
 -- *Main> day20part2
--- 
+-- 228282646835717
 
 
 -------------
 -- Imports --
 -------------
-import Data.List (foldl', nub, sort, sortBy, groupBy, delete, find)
+import Data.List (foldl')
 import Data.List.Split (splitOn)
 import qualified Data.Map as M
-import Data.Maybe (fromJust, maybeToList, catMaybes)
-import Linear hiding (trace)
-import Linear.V2
-import Debug.Trace (trace)
-import Data.Ord
-import Data.Function
-import Data.Tuple
+import Data.Maybe
 import Deque.Strict as D
 import GHC.Exts as F
 

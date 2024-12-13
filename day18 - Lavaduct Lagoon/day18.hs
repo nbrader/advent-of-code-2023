@@ -1,5 +1,5 @@
 #!/usr/bin/env stack
--- stack --resolver lts-21.22 ghci --package containers-0.6.7 --package linear-1.22
+-- stack --resolver lts-21.22 ghci --package linear-1.22
 
 -----------------------------------
 -----------------------------------
@@ -8,14 +8,14 @@
 -----------------------------------
 {-
     To build, run the following shell command in this directory:
-        stack --resolver lts-21.22 ghc --package containers-0.6.7 --package linear-1.22 -- '.\day18.hs' -O2
+        stack --resolver lts-21.22 ghc --package linear-1.22 -- '.\day18.hs' -O2
 -}
 
 ------------
 -- Output --
 ------------
 -- *Main> day18part1
--- 
+-- 50603
 
 -- *Main> day18part2
 -- 
@@ -24,15 +24,11 @@
 -------------
 -- Imports --
 -------------
-import Data.List (foldl', nub, sort, sortBy, groupBy, delete)
-import qualified Data.Map as M
-import Data.Maybe (fromJust, maybeToList, catMaybes)
+import Data.List (foldl', nub, sortBy, groupBy, delete)
+import Data.Maybe (catMaybes)
 import Linear hiding (trace)
-import Linear.V2
-import Debug.Trace (trace)
 import Data.Ord
 import Data.Function
-import Data.Tuple
 
 
 -------------
