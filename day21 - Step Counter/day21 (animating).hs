@@ -8,7 +8,7 @@
 --------------------------------
 {-
     To build, run the following shell command in this directory:
-        stack --resolver lts-21.22 ghc --package containers-0.6.7 --package split-0.2.3.5 --package safe-0.3.19 --package QuickCheck-2.14.3 --package ansi-terminal-0.11.3 -- '.\day21 (animating).hs' -O2
+        stack --resolver lts-21.22 ghc --package containers-0.6.7 --package split-0.2.3.5 --package safe-0.3.19 --package QuickCheck-2.14.3 --package ansi-terminal-0.11.5 -- '.\day21 (animating).hs' -O2
 -}
 
 ------------
